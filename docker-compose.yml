@@ -1,0 +1,15 @@
+services:
+  photobooth:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: photobooth-ios:local
+    restart: unless-stopped
+    ports:
+      - "8085:80"
+    environment:
+      COMPOSER_VERSION: "2"
+    volumes:
+      - ./data:/app/data
+      - ./private:/app/private
+      - ./config:/app/config

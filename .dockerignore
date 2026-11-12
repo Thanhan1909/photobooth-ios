@@ -1,0 +1,12 @@
+.git
+.github
+node_modules
+data
+private
+var
+archives
+trash
+.DS_Store
+*.log
+.env
+.env.*

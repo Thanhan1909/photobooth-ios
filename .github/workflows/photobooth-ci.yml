@@ -1,0 +1,30 @@
+name: Photobooth CI
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build image
+        run: docker compose build
+      - name: Start photobooth
+        run: docker compose up -d --no-build
+      - name: Verify HTTP
+        run: |
+          for i in $(seq 1 30); do
+            if curl --fail --silent --output /dev/null http://localhost:8085/; then exit 0; fi
+            sleep 2
+          done
+          docker compose logs
+          exit 1
+      - name: Stop
+        if: always()
+        run: docker compose down
