@@ -45,7 +45,7 @@ a.action{display:inline-flex;align-items:center;justify-content:center}
 <a id="download" class="action primary" hidden download="photobooth.jpg">Download ảnh</a>
 </div>
 <div id="filterList" class="filters" aria-label="Bộ lọc ảnh"></div>
-<p class="help">Filter được xem trước trực tiếp và lưu vào ảnh tải xuống. iPhone cần mở trang bằng HTTPS và cho phép Safari sử dụng camera. Không cần upload ảnh lên máy chủ.</p>
+<p class="help">Bộ lọc lấy cảm hứng từ các dự án Photobooth và WebGL mã nguồn mở. Hiệu ứng tùy chỉnh được xử lý trên thiết bị trước khi tải JPEG. Camera live trên iPhone yêu cầu HTTPS. Không upload ảnh lên máy chủ.</p>
 <div id="fallback">
 <p class="help">Nếu đang dùng HTTP trên iPhone, hãy chụp qua camera iOS rồi chọn filter và tải ảnh ngay. Ảnh không phải upload lên máy chủ.</p>
 <label class="action primary" for="nativeCamera">Chụp bằng camera iPhone</label>
@@ -55,5 +55,6 @@ a.action{display:inline-flex;align-items:center;justify-content:center}
 </div>
 <canvas id="canvas" hidden></canvas>
 </main>
-<script src="/mobile/camera.js" defer></script>
+<script src="/mobile/filter-engine.js?v=2" defer></script>
+<script src="/mobile/camera.js?v=2" defer></script>
 </body></html>

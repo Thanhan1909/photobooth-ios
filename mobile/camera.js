@@ -5,144 +5,160 @@
   const status = $('status'), start = $('start'), shoot = $('shoot');
   const retake = $('retake'), download = $('download'), switchBtn = $('switch');
   const placeholder = $('placeholder'), fallback = $('fallback');
-  const presets = [
-    ['plain','None','none'],['antique','Antique','sepia(.7) contrast(1.13) brightness(.93)'],
-    ['aqua','Aqua','hue-rotate(145deg) saturate(1.7)'],['blue','Blue','sepia(.4) hue-rotate(165deg) saturate(1.7)'],
-    ['blur','Blur','blur(2px)'],['color','Color','saturate(1.6) contrast(1.05)'],
-    ['cool','Cool','hue-rotate(15deg) saturate(1.15)'],['everglow','Everglow','brightness(1.18) saturate(1.25)'],
-    ['grayscale','Grayscale','grayscale(1)'],['green','Green','sepia(.45) hue-rotate(65deg) saturate(1.5)'],
-    ['negate','Negate','invert(1)'],['pink','Pink','sepia(.3) hue-rotate(285deg) saturate(1.4)'],
-    ['red','Red','sepia(.5) hue-rotate(300deg) saturate(1.5)'],['retro','Retro','sepia(.45) contrast(1.12) saturate(.8)'],
-    ['sepia-light','Sepia light','sepia(.55)'],['sepia-dark','Sepia dark','sepia(.9) contrast(1.15) brightness(.8)'],
-    ['smooth','Smooth','contrast(.94) brightness(1.04)'],['summer','Summer','sepia(.18) saturate(1.4) brightness(1.08)'],
-    ['vintage','Vintage','sepia(.55) contrast(.88) brightness(.96)'],['washed','Washed','contrast(.75) brightness(1.14)'],
-    ['yellow','Yellow','sepia(.4) saturate(1.5) hue-rotate(345deg)']
-  ];
+  const engine = window.PhotoboothFilters;
+  if (!engine) { status.textContent = 'Thiếu thư viện bộ lọc.'; return; }
+  const presets = engine.presets;
   let selected = presets[0], stream = null, facing = 'user';
-  let captured = null, sourceFile = null, objectUrl = null, downloadUrl = null;
+  let captured = null, imageUrl = null, downloadUrl = null, renderVersion = 0;
   const setStatus = text => { status.textContent = text; };
   const isSecure = window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
+
   function renderFilters() {
     const list = $('filterList');
     presets.forEach(p => {
       const btn = document.createElement('button');
-      btn.type = 'button'; btn.textContent = p[1]; btn.dataset.filter = p[0];
+      btn.type = 'button';
+      btn.textContent = p.label;
+      btn.dataset.filter = p.id;
+      btn.title = p.source === 'base' ? 'Photobooth' : 'Reference: ' + p.source;
       btn.addEventListener('click', () => {
         selected = p;
-        Array.from(list.children).forEach(b => b.classList.toggle('active', b === btn));
+        Array.from(list.children).forEach(b => {
+          b.classList.toggle('active', b === btn);
+          b.setAttribute('aria-pressed', String(b === btn));
+        });
         updateFilter();
       });
+      btn.setAttribute('aria-pressed', String(p === selected));
       list.appendChild(btn);
     });
     list.firstElementChild.classList.add('active');
   }
   function updateFilter() {
-    camera.style.filter = selected[2];
-    result.style.filter = selected[2];
-    if (captured || sourceFile) makeDownload();
+    camera.style.filter = selected.css;
+    if (captured) renderPhoto();
   }
   function stopStream() {
-    if (stream) stream.getTracks().forEach(t => t.stop());
+    if (stream) stream.getTracks().forEach(track => track.stop());
     stream = null;
     camera.srcObject = null;
   }
   async function openCamera() {
     if (!isSecure) {
       fallback.style.display = 'block';
-      setStatus('Camera trực tiếp cần HTTPS trên iPhone (hoặc localhost trên PC). Dùng link HTTPS để chụp trực tiếp.');
+      setStatus('Camera live cần HTTPS trên iPhone. Bạn vẫn có thể dùng nút Chụp bằng camera iPhone bên dưới.');
       return;
     }
     start.disabled = true;
     stopStream();
     try {
       stream = await navigator.mediaDevices.getUserMedia({
-        audio: false, video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+        audio: false, video: {
+          facingMode: { ideal: facing },
+          width: { ideal: 1920 }, height: { ideal: 1080 }
+        }
       });
       camera.srcObject = stream;
       await camera.play();
       camera.classList.toggle('mirror', facing === 'user');
-      placeholder.hidden = true;
       camera.style.display = 'block';
       result.style.display = 'none';
+      placeholder.hidden = true;
       captured = null;
-      if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
-      sourceFile = null;
       shoot.disabled = false; switchBtn.disabled = false;
       retake.hidden = true; download.hidden = true;
-      setStatus('Đã mở camera. Chọn filter rồi bấm Chụp ảnh.');
+      setStatus('Chọn filter để xem trước, sau đó nhấn Chụp ảnh.');
     } catch (err) {
       fallback.style.display = 'block';
-      setStatus('Không thể mở camera: ' + (err?.message || 'Chưa được cấp quyền.'));
+      setStatus('Không mở được camera: ' + (err?.message || 'Chưa được cấp quyền'));
     } finally { start.disabled = false; }
   }
   function capture() {
     if (!stream || !camera.videoWidth) { setStatus('Camera chưa sẵn sàng.'); return; }
-    const max = 2400;
-    const factor = Math.min(1, max / Math.max(camera.videoWidth, camera.videoHeight));
-    canvas.width = Math.round(camera.videoWidth * factor);
-    canvas.height = Math.round(camera.videoHeight * factor);
-    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    ctx.save();
-    if (facing === 'user') { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
-    ctx.drawImage(camera, 0, 0, canvas.width, canvas.height);
-    ctx.restore();
+    const factor = Math.min(1, 2048 / Math.max(camera.videoWidth, camera.videoHeight));
+    const w = Math.max(1, Math.round(camera.videoWidth * factor));
+    const h = Math.max(1, Math.round(camera.videoHeight * factor));
     captured = document.createElement('canvas');
-    captured.width = canvas.width; captured.height = canvas.height;
-    captured.getContext('2d').drawImage(canvas, 0, 0);
+    captured.width = w; captured.height = h;
+    const ctx = captured.getContext('2d');
+    if (facing === 'user') { ctx.translate(w, 0); ctx.scale(-1, 1); }
+    ctx.drawImage(camera, 0, 0, w, h);
     showResult();
   }
   function showResult() {
     stopStream();
-    const current = captured ? captured.toDataURL('image/jpeg', .95) : objectUrl;
-    result.src = current;
-    result.style.display = 'block';
     camera.style.display = 'none';
+    result.style.display = 'block';
     shoot.disabled = true; switchBtn.disabled = true;
-    retake.hidden = false;
-    placeholder.hidden = true;
-    setStatus('Đã chụp. Có thể đổi filter, Download ảnh hoặc Chụp lại.');
+    retake.hidden = false; placeholder.hidden = true;
+    setStatus('Chọn filter và nhấn Download ảnh. Ảnh được xử lý ngay trên thiết bị.');
     updateFilter();
   }
-  function makeDownload() {
-    const source = captured || result;
-    if (!(source instanceof HTMLCanvasElement) && !source.complete) return;
-    canvas.width = source instanceof HTMLCanvasElement ? source.width : source.naturalWidth;
-    canvas.height = source instanceof HTMLCanvasElement ? source.height : source.naturalHeight;
-    if (!canvas.width || !canvas.height) return;
-    const ctx = canvas.getContext('2d');
-    // Use native canvas filters, same visual CSS pipeline when available.
-    if ('filter' in ctx) ctx.filter = selected[2];
-    else { setStatus('Trình duyệt này chưa hỗ trợ lưu filter qua Canvas. Hãy cập nhật Safari.'); return; }
-    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
-    ctx.filter = 'none';
-    canvas.toBlob(blob => {
-      if (!blob) { setStatus('Không thể tạo ảnh tải xuống.'); return; }
-      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
-      downloadUrl = URL.createObjectURL(blob);
-      download.href = downloadUrl;
-      download.download = 'photobooth-' + new Date().toISOString().replace(/[:.]/g, '-') + '.jpg';
-      download.hidden = false;
-    }, 'image/jpeg', .95);
+  function renderPhoto() {
+    const version = ++renderVersion;
+    download.hidden = true;
+    try {
+      engine.apply(canvas, captured, selected);
+      canvas.toBlob(blob => {
+        if (version !== renderVersion) return;
+        if (!blob) { setStatus('Không tạo được ảnh tải xuống.'); return; }
+        const newUrl = URL.createObjectURL(blob);
+        const oldUrl = imageUrl;
+        imageUrl = newUrl;
+        result.onload = () => {
+          result.onload = null;
+          if (oldUrl) URL.revokeObjectURL(oldUrl);
+        };
+        result.src = newUrl;
+        result.style.filter = 'none';
+        if (downloadUrl && downloadUrl !== oldUrl && downloadUrl !== newUrl) URL.revokeObjectURL(downloadUrl);
+        downloadUrl = newUrl;
+        download.href = newUrl;
+        download.download = 'photobooth-' + new Date().toISOString().replace(/[:.]/g, '-') + '.jpg';
+        download.hidden = false;
+      }, 'image/jpeg', .94);
+    } catch (err) {
+      setStatus('Lỗi xử lý filter: ' + (err?.message || String(err)));
+    }
   }
-  const handlePickedImage = e => {
-    const file = e.target.files?.[0];
-    if (!file || !file.type.startsWith('image/') || file.size > 20 * 1024 * 1024) {
+  function handlePickedImage(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/') || file.size > 20 * 1024 * 1024) {
       setStatus('Chỉ chấp nhận ảnh nhỏ hơn 20 MB.'); return;
     }
-    sourceFile = file; captured = null; stopStream();
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
-    objectUrl = URL.createObjectURL(file);
-    result.onload = () => { result.onload = null; showResult(); };
-    result.onerror = () => setStatus('Không đọc được ảnh.');
-    result.src = objectUrl;
-  };
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const factor = Math.min(1, 2048 / Math.max(img.naturalWidth, img.naturalHeight));
+      captured = document.createElement('canvas');
+      captured.width = Math.round(img.naturalWidth * factor);
+      captured.height = Math.round(img.naturalHeight * factor);
+      captured.getContext('2d').drawImage(img, 0, 0, captured.width, captured.height);
+      URL.revokeObjectURL(url);
+      showResult();
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      setStatus('Không thể đọc định dạng ảnh này. Hãy thử JPEG hoặc PNG.');
+    };
+    img.src = url;
+  }
   $('pick').addEventListener('change', handlePickedImage);
   $('nativeCamera').addEventListener('change', handlePickedImage);
   start.addEventListener('click', openCamera);
   shoot.addEventListener('click', capture);
-  switchBtn.addEventListener('click', () => { facing = facing === 'user' ? 'environment' : 'user'; openCamera(); });
+  switchBtn.addEventListener('click', () => {
+    facing = facing === 'user' ? 'environment' : 'user';
+    openCamera();
+  });
   retake.addEventListener('click', openCamera);
-  window.addEventListener('pagehide', () => { stopStream(); if (objectUrl) URL.revokeObjectURL(objectUrl); if (downloadUrl) URL.revokeObjectURL(downloadUrl); });
+  window.addEventListener('pagehide', () => {
+    stopStream();
+    if (imageUrl) URL.revokeObjectURL(imageUrl);
+    if (downloadUrl && downloadUrl !== imageUrl) URL.revokeObjectURL(downloadUrl);
+  });
   renderFilters();
   if (!isSecure) fallback.style.display = 'block';
 })();

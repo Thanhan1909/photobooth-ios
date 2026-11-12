@@ -31,8 +31,11 @@ jobs:
           exit 1
       - name: Verify mobile camera assets
         run: |
+          docker compose exec -T photobooth node --check /app/mobile/filter-engine.js
           docker compose exec -T photobooth node --check /app/mobile/camera.js
+          docker compose exec -T photobooth node /app/tests/mobile-filter-engine.test.cjs
           curl --fail --silent --show-error http://localhost:8085/mobile/ | grep -q 'Photobooth Camera'
+          curl --fail --silent --show-error http://localhost:8085/mobile/filter-engine.js | grep -q 'PhotoboothFilters'
           curl --fail --silent --show-error http://localhost:8085/mobile/camera.js | grep -q 'getUserMedia'
       - name: Stop
         if: always()
