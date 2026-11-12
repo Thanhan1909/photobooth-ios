@@ -3,58 +3,101 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#111827">
-<title>Photobooth — Camera & Filters</title>
-<style>
-:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif;background:#111827;color:#fff}
-*{box-sizing:border-box}body{margin:0;min-height:100dvh}
-main{max-width:780px;margin:auto;padding:16px 16px max(20px,env(safe-area-inset-bottom))}
-header{display:flex;justify-content:space-between;align-items:center;gap:12px}
-h1{font-size:1.25rem;margin:0}a{color:#a5b4fc;text-decoration:none}
-#status{font-size:.85rem;color:#cbd5e1;margin:10px 0}
-.viewer{position:relative;width:100%;aspect-ratio:3/4;background:#030712;border-radius:20px;overflow:hidden;display:grid;place-items:center}
-video,#result{position:absolute;width:100%;height:100%;object-fit:contain}
-video.mirror{transform:scaleX(-1)}#result{display:none}
-#placeholder{color:#9ca3af;text-align:center;padding:24px}
-.toolbar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0}
-button,.action{border:0;border-radius:12px;background:#374151;color:#fff;padding:12px 16px;font:inherit;cursor:pointer;text-align:center}
-button:disabled{opacity:.5;cursor:not-allowed}
-button.primary,.action.primary{background:#4f46e5;font-weight:700}
-button[aria-pressed=true]{outline:2px solid #a5b4fc}
-.filters{display:flex;gap:10px;overflow-x:auto;padding:12px 0 16px;scroll-snap-type:x mandatory}
-.filters button{flex:0 0 auto;min-width:96px;scroll-snap-align:start}
-.filters button.active{background:#4f46e5;outline:2px solid #c7d2fe}
-.help{color:#9ca3af;font-size:.82rem;line-height:1.5}
-a.action{display:inline-flex;align-items:center;justify-content:center}
-#fallback{display:none}
-</style>
+<meta name="theme-color" content="#fff8f2">
+<title>Bloom Booth — Photobooth Studio</title>
+<link rel="stylesheet" href="/mobile/studio.css?v=4">
 </head>
-<body><main>
-<header><h1>Photobooth Camera</h1><a href="/">Trang chính</a></header>
-<p id="status" role="status">Bấm “Mở camera” để bắt đầu.</p>
-<div class="viewer">
-<video id="camera" autoplay playsinline muted></video>
-<img id="result" alt="Ảnh sau khi chụp">
-<div id="placeholder">Camera trực tiếp với filter</div>
-</div>
-<div class="toolbar">
-<button class="primary" id="start">Mở camera</button>
-<button id="switch" disabled>Đổi camera</button>
-<button class="primary" id="shoot" disabled>Chụp ảnh</button>
-<button id="retake" hidden>Chụp lại</button>
-<a id="download" class="action primary" hidden download="photobooth.jpg">Download ảnh</a>
-</div>
-<div id="filterList" class="filters" aria-label="Bộ lọc ảnh"></div>
-<p class="help">Bộ lọc lấy cảm hứng từ các dự án Photobooth và WebGL mã nguồn mở. Hiệu ứng tùy chỉnh được xử lý trên thiết bị trước khi tải JPEG. Camera live trên iPhone yêu cầu HTTPS. Không upload ảnh lên máy chủ.</p>
-<div id="fallback">
-<p class="help">Nếu đang dùng HTTP trên iPhone, hãy chụp qua camera iOS rồi chọn filter và tải ảnh ngay. Ảnh không phải upload lên máy chủ.</p>
-<label class="action primary" for="nativeCamera">Chụp bằng camera iPhone</label>
-<input id="nativeCamera" type="file" accept="image/*" capture="environment" hidden>
-<label class="action" for="pick">Chọn ảnh có sẵn</label>
-<input id="pick" type="file" accept="image/*" hidden>
-</div>
-<canvas id="canvas" hidden></canvas>
+<body>
+<header class="topbar">
+  <a class="brand" href="/mobile/" aria-label="Bloom Booth trang chủ"><span class="brand-logo">✿</span><span>BLOOM<span class="brand-accent">BOOTH</span><small>PHOTO STUDIO</small></span></a>
+  <span class="top-note">Khoảnh khắc của bạn, phong cách của bạn <span class="sparkle">✦</span></span>
+  <a class="top-link" href="/">Trang Photobooth gốc ↗</a>
+</header>
+<main class="shell">
+  <section class="intro">
+    <span class="eyebrow">✧ YOUR LITTLE PHOTO STUDIO</span>
+    <h1>Chụp một tấm ảnh, <em>thêm chút phép màu.</em></h1>
+    <p>Chọn bộ lọc, đổi background, tô điểm khung ảnh và lưu kỷ niệm của riêng bạn.</p>
+  </section>
+  <div class="studio">
+    <section class="preview-area" aria-label="Xem trước và chụp ảnh">
+      <div class="preview-label"><span class="live-dot"></span><span id="previewLabel">STUDIO PREVIEW</span><span class="count-badge">01 / 01</span></div>
+      <div class="preview-outer">
+        <div class="preview-stage" id="stage">
+          <video id="camera" autoplay playsinline muted></video>
+          <canvas id="preview" aria-label="Ảnh photobooth đang chỉnh sửa"></canvas>
+          <div id="placeholder" class="placeholder">
+            <div class="placeholder-art"><span>✿</span><span class="art-stars">✧ ⋆</span></div>
+            <h2>Hôm nay mình chụp gì nhỉ?</h2>
+            <p>Mở camera hoặc chọn một tấm ảnh để bắt đầu sáng tạo.</p>
+          </div>
+          <div id="processing" class="processing" hidden><div class="spinner"></div><span>Đang tách nền bằng AI...</span></div>
+        </div>
+      </div>
+      <div class="capture-actions">
+        <button id="start" class="btn btn-ghost" type="button">◉ <span>Mở camera</span></button>
+        <button id="switch" class="btn btn-ghost icon-btn" type="button" disabled title="Đổi camera" aria-label="Đổi camera">⇄</button>
+        <button id="shoot" class="btn btn-coral" type="button" disabled><span class="shutter">●</span> Chụp ảnh</button>
+        <button id="retake" class="btn btn-ghost" type="button" hidden>↻ Chụp lại</button>
+      </div>
+      <div class="secondary-actions">
+        <label for="nativeCamera" class="small-action">📷 Chụp bằng camera iPhone</label>
+        <input type="file" id="nativeCamera" accept="image/*" capture="environment" hidden>
+        <span class="action-sep">·</span>
+        <label for="pick" class="small-action">▧ Chọn ảnh có sẵn</label>
+        <input type="file" id="pick" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" hidden>
+      </div>
+      <p id="status" class="status" role="status">Sẵn sàng. Bạn có thể chọn ảnh từ thư viện hoặc mở camera.</p>
+      <div class="tip">✦ Ảnh được xử lý ngay trên thiết bị, không cần upload lên server.</div>
+    </section>
+    <section class="editor" aria-label="Tùy chỉnh ảnh photobooth">
+      <div class="editor-header">
+        <div><span class="eyebrow">LET'S MAKE IT YOURS</span><h2>Trang trí tấm ảnh</h2></div>
+        <span class="editor-flower">✿</span>
+      </div>
+      <nav class="tabs" aria-label="Chọn công cụ">
+        <button class="tab active" type="button" data-tab="filters" aria-selected="true">◈ <span>Bộ lọc</span></button>
+        <button class="tab" type="button" data-tab="backgrounds" aria-selected="false">▧ <span>Phông nền</span></button>
+        <button class="tab" type="button" data-tab="frames" aria-selected="false">▣ <span>Khung ảnh</span></button>
+      </nav>
+      <div class="panels">
+        <section class="panel active" data-panel="filters">
+          <div class="panel-heading"><div><h3>Chọn mood của bạn <span>♡</span></h3><p>Từ trong trẻo đến retro, tạo đúng cảm xúc cho tấm ảnh.</p></div><span id="filterCount" class="tiny-badge">43 mẫu</span></div>
+          <div class="category-strip" id="filterCategories">
+            <button class="category active" data-category="all">Tất cả</button>
+            <button class="category" data-category="portrait">Chân dung</button>
+            <button class="category" data-category="film">Film & Retro</button>
+            <button class="category" data-category="creative">Sáng tạo</button>
+          </div>
+          <div class="option-grid filters-grid" id="filterList"></div>
+        </section>
+        <section class="panel" data-panel="backgrounds" hidden>
+          <div class="panel-heading"><div><h3>Đổi không gian <span>✳</span></h3><p>Thay background sau lưng bạn bằng AI, không cần phông xanh.</p></div></div>
+          <div class="background-notice">✦ <b>AI tách nền</b> chạy trên thiết bị. Lần đầu có thể cần thêm thời gian. Tóc và viền người phụ thuộc chất lượng ảnh.</div>
+          <div class="option-grid background-grid" id="backgroundList"></div>
+          <div class="upload-row"><label class="btn btn-ghost file-label" for="customBackground">＋ Tải ảnh nền riêng</label><input id="customBackground" type="file" accept="image/jpeg,image/png,image/webp" hidden><span>JPG / PNG / WebP, tối đa 12 MB</span></div>
+          <label class="field-label" for="bgStrength">Độ sắc nét viền tách nền <output id="bgStrengthLabel">50%</output></label>
+          <input id="bgStrength" type="range" min="0" max="100" value="50">
+        </section>
+        <section class="panel" data-panel="frames" hidden>
+          <div class="panel-heading"><div><h3>Đóng khung kỷ niệm <span>✿</span></h3><p>Khung được ghép trực tiếp vào ảnh xuất ra, không chỉ để xem trước.</p></div></div>
+          <div class="option-grid frame-grid" id="frameList"></div>
+          <div class="upload-row"><label class="btn btn-ghost file-label" for="customFrame">＋ Tải khung PNG riêng</label><input id="customFrame" type="file" accept="image/png,image/webp" hidden><span>PNG trong suốt, tối đa 12 MB</span></div>
+          <label class="field-label" for="captionText">Lời nhắn trên khung <small>(tùy chọn)</small></label>
+          <input id="captionText" type="text" maxlength="48" placeholder="Ví dụ: Our little moment ♡">
+        </section>
+      </div>
+      <div class="editor-footer">
+        <div class="summary"><span class="summary-icon">♡</span><div><b>Ảnh đẹp đã sẵn sàng?</b><small>Chọn bộ lọc, phông nền và khung yêu thích.</small></div></div>
+        <button id="download" class="btn btn-download" type="button" disabled>⇩ Tải ảnh về máy <span>→</span></button>
+        <button id="resetEdit" class="reset" type="button">↺ Đặt lại chỉnh sửa</button>
+      </div>
+    </section>
+  </div>
+  <footer class="footer">Made for little moments <span>✿</span> Bloom Booth Studio</footer>
 </main>
-<script src="/mobile/filter-engine.js?v=2" defer></script>
-<script src="/mobile/camera.js?v=2" defer></script>
-</body></html>
+<script src="/mobile/filter-engine.js?v=4" defer></script>
+<script src="/mobile/vendor/mediapipe/selfie_segmentation.js" defer></script>
+<script src="/mobile/studio.js?v=4" defer></script>
+</body>
+</html>
