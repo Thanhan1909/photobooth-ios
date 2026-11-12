@@ -57,3 +57,6 @@ scripts/rembg_venv/
 /.venv
 /site
 /.envrc
+
+# Local Windows CI/CD logs
+deploy/*.log
