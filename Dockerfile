@@ -8,4 +8,8 @@ WORKDIR /app
 COPY . .
 RUN chown -R application:application /app
 USER application
-RUN npm ci && npm run build
+RUN npm ci \
+    && npm run composer:install \
+    && npm run build:gulp \
+    && printf 'Docker build\n' > HEAD \
+    && npm run clean:skipwelcome
