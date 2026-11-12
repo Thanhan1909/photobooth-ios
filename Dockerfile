@@ -13,3 +13,5 @@ RUN npm ci \
     && npm run build:gulp \
     && printf 'Docker build\n' > HEAD \
     && npm run clean:skipwelcome
+# Supervisor must start as root; PHP-FPM/Apache application workers use their configured unprivileged users.
+USER root

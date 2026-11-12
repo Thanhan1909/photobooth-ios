@@ -11,35 +11,67 @@ try {
     Log 'Tracked local modifications: deployment skipped'
     exit 0
   }
-  # GitHub Actions advances deploy/windows ONLY when build and HTTP tests pass.
-  # Git fetch avoids unauthenticated REST API limits on the Windows host.
+  # CI advances deploy/windows only after Docker and application tests pass.
   git fetch origin '+refs/heads/main:refs/remotes/origin/main' '+refs/heads/deploy/windows:refs/remotes/origin/deploy/windows'
-  if ($LASTEXITCODE -ne 0) { throw 'Failed to fetch CI-approved branch from GitHub' }
+  if ($LASTEXITCODE -ne 0) { throw 'Failed to fetch GitHub' }
   $approved = (git rev-parse 'refs/remotes/origin/deploy/windows').Trim()
   $latest = (git rev-parse 'refs/remotes/origin/main').Trim()
   if ($approved -ne $latest) {
-    Log "CI has not approved latest main ($latest); skip"
+    Log "Latest main is not CI-approved ($latest); skip"
     exit 0
   }
   $deployed = if (Test-Path $deployedFile) { (Get-Content $deployedFile -Raw).Trim() } else { '' }
   if ($deployed -eq $approved) { exit 0 }
+
+  $changes = @()
+  if ($deployed -match '^[a-f0-9]{40}$') {
+    $changes = @(git diff --name-only $deployed $approved)
+    if ($LASTEXITCODE -ne 0) { throw 'Unable to compare deployed and approved versions' }
+  }
+  $frontendOnly = ($changes.Count -gt 0)
+  foreach ($file in $changes) {
+    if ($file -notmatch '^(mobile/|tests/|\.github/|deploy/|README|DEPLOY-WINDOWS-IPHONE\.md)') {
+      $frontendOnly = $false
+      break
+    }
+  }
   $local = (git rev-parse HEAD).Trim()
   if ($local -ne $approved) {
     git pull --ff-only origin deploy/windows
-    if ($LASTEXITCODE -ne 0) { throw 'Local branch cannot fast-forward to approved deploy branch' }
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot fast-forward to approved deployment' }
   }
   git submodule update --init --recursive
   if ($LASTEXITCODE -ne 0) { throw 'Submodule update failed' }
-  docker compose up -d --build
-  if ($LASTEXITCODE -ne 0) { throw 'Docker deployment failed' }
+
+  docker compose config --quiet
+  if ($LASTEXITCODE -ne 0) { throw 'Invalid Docker Compose configuration' }
+  if ($frontendOnly) {
+    # /app/mobile is bind mounted read-only. Git-pulled assets are immediately visible.
+    docker compose up -d --no-build
+    if ($LASTEXITCODE -ne 0) { throw 'Frontend-only Docker refresh failed' }
+    Log "Frontend-only update $approved (no image rebuild)"
+  } else {
+    $freeBytes = (Get-PSDrive C).Free
+    if ($freeBytes -lt 5GB) {
+      Log "Docker rebuild blocked: C drive has only $([math]::Round($freeBytes/1GB,2)) GB free; requires 5 GB. Current container unchanged."
+      exit 0
+    }
+    docker compose up -d --build
+    if ($LASTEXITCODE -ne 0) { throw 'Docker image rebuild failed' }
+  }
   $healthy = $false
-  for ($i = 0; $i -lt 20; $i++) {
+  for ($i = 0; $i -lt 15; $i++) {
     try {
-      $web = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8085/mobile/' -TimeoutSec 10
-      if ($web.StatusCode -eq 200 -and $web.Content.Contains('filter-engine.js')) { $healthy = $true; break }
+      $web = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8085/mobile/' -TimeoutSec 8
+      $strip = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8085/mobile/strip-engine.js' -TimeoutSec 8
+      if ($web.StatusCode -eq 200 -and $web.Content.Contains('shotCounter') -and
+          $strip.StatusCode -eq 200 -and $strip.Content.Contains('BloomStrip')) {
+        $healthy = $true
+        break
+      }
     } catch { Start-Sleep -Seconds 3 }
   }
-  if (!$healthy) { throw 'Mobile HTTP health check failed; deployed marker unchanged' }
+  if (!$healthy) { throw 'BloomBooth strip health check failed' }
   Set-Content -Path $deployedFile -Value $approved -NoNewline
   Log "Deployed $approved"
 } catch {
