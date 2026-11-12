@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+concurrency:
+  group: photobooth-windows-release
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
@@ -12,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: recursive
       - name: Prepare writable persistent directories
         run: |
@@ -42,7 +46,10 @@ jobs:
           curl --fail --silent --show-error http://localhost:8085/mobile/vendor/mediapipe/selfie_segmentation.js | grep -q 'SelfieSegmentation'
           curl --fail --silent --output /dev/null http://localhost:8085/mobile/vendor/mediapipe/selfie_segmentation_solution_wasm_bin.wasm
       - name: Publish approved commit for Windows deployment
-        run: git push origin HEAD:refs/heads/deploy/windows
+        run: |
+          git fetch origin main
+          test "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)"
+          git push origin HEAD:refs/heads/deploy/windows
       - name: Stop
         if: always()
         run: docker compose down
