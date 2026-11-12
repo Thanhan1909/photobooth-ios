@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$repo = 'C:\Projects\photobooth-ios'
+$repo = 'E:\PhotoBooth\photobooth-ios'
 $log = Join-Path $repo 'deploy\deploy.log'
 $deployedFile = Join-Path $repo 'deploy\deployed.sha'
 function Log([string]$message) {
