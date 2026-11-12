@@ -11,7 +11,7 @@ try {
   Set-Location $repo
   $current = (git rev-parse HEAD).Trim()
   if ($current -eq $run.head_sha) { exit 0 }
-  if ((git status --porcelain).Length -gt 0) { Log 'Local modifications present; skip'; exit 1 }
+  if ((git status --porcelain --untracked-files=no).Length -gt 0) { Log 'Local tracked modifications present; skip'; exit 1 }
   git fetch origin main
   if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
   $remote = (git rev-parse origin/main).Trim()
