@@ -6,31 +6,43 @@ function Log([string]$message) {
   "[$(Get-Date -Format o)] $message" | Add-Content -Path $log
 }
 try {
-  $runs = Invoke-RestMethod -Uri 'https://api.github.com/repos/Thanhan1909/photobooth-ios/actions/workflows/photobooth-ci.yml/runs?branch=main&per_page=1' -Headers @{ 'User-Agent' = 'photobooth-windows-updater' }
-  $run = $runs.workflow_runs | Select-Object -First 1
-  if (!$run -or $run.status -ne 'completed' -or $run.conclusion -ne 'success') { Log 'CI has not passed; skip'; exit 0 }
   Set-Location $repo
+  if ((git status --porcelain --untracked-files=no).Length -gt 0) {
+    Log 'Tracked local modifications: deployment skipped'
+    exit 0
+  }
+  # GitHub Actions advances deploy/windows ONLY when build and HTTP tests pass.
+  # Git fetch avoids unauthenticated REST API limits on the Windows host.
+  git fetch origin '+refs/heads/main:refs/remotes/origin/main' '+refs/heads/deploy/windows:refs/remotes/origin/deploy/windows'
+  if ($LASTEXITCODE -ne 0) { throw 'Failed to fetch CI-approved branch from GitHub' }
+  $approved = (git rev-parse 'refs/remotes/origin/deploy/windows').Trim()
+  $latest = (git rev-parse 'refs/remotes/origin/main').Trim()
+  if ($approved -ne $latest) {
+    Log "CI has not approved latest main ($latest); skip"
+    exit 0
+  }
   $deployed = if (Test-Path $deployedFile) { (Get-Content $deployedFile -Raw).Trim() } else { '' }
-  if ($deployed -eq $run.head_sha) { exit 0 }
-  if ((git status --porcelain --untracked-files=no).Length -gt 0) { Log 'Local tracked modifications present; skip'; exit 1 }
-  git fetch origin main
-  if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
-  $remote = (git rev-parse origin/main).Trim()
-  if ($remote -ne $run.head_sha) { Log 'CI is not for current main; skip'; exit 0 }
-  git pull --ff-only origin main
-  if ($LASTEXITCODE -ne 0) { throw 'git pull failed' }
+  if ($deployed -eq $approved) { exit 0 }
+  $local = (git rev-parse HEAD).Trim()
+  if ($local -ne $approved) {
+    git pull --ff-only origin deploy/windows
+    if ($LASTEXITCODE -ne 0) { throw 'Local branch cannot fast-forward to approved deploy branch' }
+  }
   git submodule update --init --recursive
-  if ($LASTEXITCODE -ne 0) { throw 'submodule failed' }
+  if ($LASTEXITCODE -ne 0) { throw 'Submodule update failed' }
   docker compose up -d --build
   if ($LASTEXITCODE -ne 0) { throw 'Docker deployment failed' }
   $healthy = $false
   for ($i = 0; $i -lt 20; $i++) {
     try {
       $web = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8085/mobile/' -TimeoutSec 10
-      if ($web.StatusCode -eq 200) { $healthy = $true; break }
+      if ($web.StatusCode -eq 200 -and $web.Content.Contains('filter-engine.js')) { $healthy = $true; break }
     } catch { Start-Sleep -Seconds 3 }
   }
-  if (!$healthy) { throw 'Mobile HTTP health check failed; deployed marker not updated' }
-  Set-Content -Path $deployedFile -Value $remote -NoNewline
-  Log "Deployed $remote"
-} catch { Log "ERROR: $_"; exit 1 }
+  if (!$healthy) { throw 'Mobile HTTP health check failed; deployed marker unchanged' }
+  Set-Content -Path $deployedFile -Value $approved -NoNewline
+  Log "Deployed $approved"
+} catch {
+  Log "ERROR: $_"
+  exit 1
+}

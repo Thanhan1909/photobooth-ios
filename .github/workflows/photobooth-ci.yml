@@ -4,7 +4,7 @@ on:
     branches: [main]
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   docker-build:
     runs-on: ubuntu-latest
@@ -37,6 +37,8 @@ jobs:
           curl --fail --silent --show-error http://localhost:8085/mobile/ | grep -q 'Photobooth Camera'
           curl --fail --silent --show-error http://localhost:8085/mobile/filter-engine.js | grep -q 'PhotoboothFilters'
           curl --fail --silent --show-error http://localhost:8085/mobile/camera.js | grep -q 'getUserMedia'
+      - name: Publish approved commit for Windows deployment
+        run: git push origin HEAD:refs/heads/deploy/windows
       - name: Stop
         if: always()
         run: docker compose down
