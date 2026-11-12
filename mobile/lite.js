@@ -1,206 +1,336 @@
 'use strict';
 (() => {
   const $=id=>document.getElementById(id);
-  const video=$('camera'),preview=$('snapshot'),empty=$('empty'),status=$('status');
-  const start=$('start'),flip=$('flip'),shoot=$('shoot'),retake=$('retake');
-  const reset=$('resetStrip'),download=$('download'),security=$('security'),counter=$('shotCounter');
-  const filters=window.PhotoboothFilters,frames=window.BloomFrames,strip=window.BloomStrip;
-  if(!filters||!frames||!strip){status.textContent='Thiếu thư viện xử lý ảnh.';return;}
-  const shots=[null,null,null];
-  let stream=null,facing='user',filter=filters.presets[0],frame=frames.frames[0];
-  let active=0,category='all',busy=false,thumbTimer=null,lastThumb='';
-  const secure=window.isSecureContext&&typeof navigator.mediaDevices?.getUserMedia==='function';
+  const video=$('camera'), preview=$('snapshot'), viewport=$('viewport');
+  const status=$('status'), counter=$('shotCounter'), start=$('start'), flip=$('flip');
+  const shoot=$('shoot'), retake=$('retake'), reset=$('resetStrip'), download=$('download');
+  const security=$('security'), filters=window.PhotoboothFilters,studio=window.BloomStudio;
+  if(!filters||!studio){status.textContent='Thieu thu vien xu ly anh';return;}
+  const state={count:3,layout:'vertical',rects:studio.cloneRects(3,'vertical'),
+    shots:[null,null,null],active:0,selected:0,swapFrom:-1,manual:false,
+    frame:studio.frames[0],filter:filters.presets[0],category:'all',frameCategory:'all',
+    facing:'user',stream:null,busy:false,thumbTimer:null,previewImage:null,framePreviewTimer:null};
+  const secure=window.isSecureContext&&!!navigator.mediaDevices?.getUserMedia;
   const setStatus=s=>{status.textContent=s;};
-  function group(p){
-    if(['none','color','cool','warm','grayscale','soft-portrait','everglow','pink','washed','summer','aqua','green','blue','sepia'].includes(p.id))return 'portrait';
-    if(['antique','retro','vintage','polaroid','kodachrome','technicolor','cookie','brownie','pinhole','clarendon','juno','lark','reyes','crema','aden','ludwig'].includes(p.id))return 'film';
-    return 'creative';
-  }
-  function drawCover(ctx,source,w,h,mirror=false){
-    const iw=source.videoWidth||source.width,ih=source.videoHeight||source.height;
-    if(!iw||!ih)return false;
-    const ratio=Math.max(w/iw,h/ih),sw=w/ratio,sh=h/ratio;
-    const x=(iw-sw)/2,y=(ih-sh)/2;
-    ctx.save();
-    if(mirror){ctx.translate(w,0);ctx.scale(-1,1);}
-    ctx.drawImage(source,x,y,sw,sh,0,0,w,h);
-    ctx.restore();return true;
-  }
-  function sampleImage(){
-    const sample=document.createElement('canvas');sample.width=144;sample.height=180;
-    const ctx=sample.getContext('2d');
-    const shot=shots[Math.max(0,active-1)]||shots[0];
-    if(stream&&video.videoWidth)drawCover(ctx,video,144,180,facing==='user');
-    else if(shot)drawCover(ctx,shot,144,180);
+  const hasShot=()=>state.shots.some(Boolean);
+  function photoSample(){
+    const c=document.createElement('canvas');c.width=140;c.height=190;
+    const x=c.getContext('2d');
+    const previous=state.shots.find(Boolean);
+    if(state.stream&&video.videoWidth){
+      const w=video.videoWidth,h=video.videoHeight,scale=Math.max(c.width/w,c.height/h);
+      x.save();if(state.facing==='user'){x.translate(c.width,0);x.scale(-1,1);}
+      x.drawImage(video,(c.width-w*scale)/2,(c.height-h*scale)/2,w*scale,h*scale);x.restore();
+    }else if(previous){x.drawImage(previous,0,0,c.width,c.height);}
     else{
-      const g=ctx.createLinearGradient(0,0,144,180);
-      g.addColorStop(0,'#f4d6cc');g.addColorStop(1,'#b6d2c3');
-      ctx.fillStyle=g;ctx.fillRect(0,0,144,180);
-      ctx.fillStyle='#e3ac9d';ctx.beginPath();ctx.arc(72,69,32,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#846b8d';ctx.beginPath();ctx.ellipse(72,180,70,62,0,0,Math.PI*2);ctx.fill();
+      const g=x.createLinearGradient(0,0,140,190);g.addColorStop(0,'#f4cfc9');g.addColorStop(1,'#b5d0cf');
+      x.fillStyle=g;x.fillRect(0,0,140,190);
+      x.fillStyle='#de9e91';x.beginPath();x.arc(70,66,31,0,Math.PI*2);x.fill();
+      x.fillStyle='#9378a1';x.beginPath();x.ellipse(70,187,68,69,0,0,Math.PI*2);x.fill();
     }
-    return sample;
+    return c;
   }
-  function updateThumbnails(){
-    const sample=sampleImage();let uri;
-    try{uri=sample.toDataURL('image/jpeg',.7);}catch{return;}
-    if(uri!==lastThumb){
-      lastThumb=uri;
-      document.querySelectorAll('.filter-preview-image').forEach(img=>{img.src=uri;});
+  const filteredCache=new WeakMap();
+  function filteredShot(source){
+    if(!source)return null;
+    let memo=filteredCache.get(source);
+    if(memo&&memo.key===state.filter.id)return memo.canvas;
+    const canvas=document.createElement('canvas');filters.apply(canvas,source,state.filter);
+    filteredCache.set(source,{key:state.filter.id,canvas});return canvas;
+  }
+  function renderedShots(){return state.shots.map(filteredShot);}
+  function resizeCanvas(){
+    const dim=studio.dimensions(state.count);
+    preview.width=420;preview.height=Math.round(dim.h*420/dim.w);
+    viewport.style.aspectRatio=dim.w+'/'+dim.h;
+    viewport.style.maxWidth=state.count===1?'380px':state.count===3?'325px':'310px';
+  }
+  function positionLive(){
+    if(!state.stream||state.active>=state.count){video.style.display='none';return;}
+    const r=state.rects[state.active];
+    video.style.left=(r.x*100)+'%';video.style.top=(r.y*100)+'%';
+    video.style.width=(r.w*100)+'%';video.style.height=(r.h*100)+'%';
+    video.style.display='block';video.style.filter=state.filter.css;
+    video.classList.toggle('mirror',state.facing==='user');
+  }
+  function renderCanvas(){
+    studio.render(preview,{count:state.count,layout:state.layout,rects:state.rects,
+      shots:renderedShots(),frame:state.frame.id,filter:state.filter,preFiltered:true,
+      selected:state.manual?state.selected:-1,preview:true});
+    positionLive();
+  }
+  function render(){
+    renderCanvas();
+    const complete=state.active>=state.count;
+    counter.textContent=state.active+' / '+state.count;
+    shoot.textContent=complete?'✓ Đã chụp đủ':'● Chụp ô '+(state.active+1)+'/'+state.count;
+    shoot.disabled=complete||!state.stream;
+    retake.hidden=state.active===0;reset.hidden=state.active===0;
+    download.disabled=!complete;
+    $('downloadDescription').textContent=complete
+      ?'Đã đủ '+state.count+' ảnh. Bạn có thể chỉnh bố cục và tải JPEG.'
+      :'Chụp đủ '+state.count+' ảnh để tải JPEG. Ảnh không được upload.';
+    positionLive();renderShotCards();
+  }
+  function renderShotCards(){
+    const box=$('shotSlots');box.replaceChildren();
+    for(let i=0;i<state.count;i++){
+      const b=document.createElement('button');b.type='button';b.draggable=Boolean(state.shots[i]);
+      b.className='shot-slot'+(state.selected===i?' active':'')+(state.swapFrom===i?' swap-from':'');
+      const img=document.createElement('img');img.alt='Ảnh ô '+(i+1);
+      if(state.shots[i]){try{img.src=state.shots[i].toDataURL('image/jpeg',.6);}catch{}}
+      else img.alt='Ô '+(i+1)+' chưa chụp';
+      const label=document.createElement('span');label.textContent='Ô '+(i+1)+(state.shots[i]?' ✓':' trống');
+      b.append(img,label);b.dataset.slot=String(i);
+      b.addEventListener('click',()=>selectSlot(i));
+      b.addEventListener('dragstart',e=>{e.dataTransfer?.setData('text/plain',String(i));});
+      b.addEventListener('dragover',e=>e.preventDefault());
+      b.addEventListener('drop',e=>{
+        e.preventDefault();
+        const from=Number(e.dataTransfer?.getData('text/plain'));
+        if(Number.isInteger(from)&&from>=0&&from<state.count)swap(from,i);
+      });
+      box.appendChild(b);
     }
-    document.querySelectorAll('.frame-preview').forEach(node=>{
-      const ctx=node.getContext('2d'),w=node.width,h=node.height;
-      ctx.clearRect(0,0,w,h);
-      strip.draw(node,[sample,sample,sample],filter,node.dataset.frame,filters);
-    });
+  }
+  function swap(a,b){
+    if(a<0||b<0||a>=state.count||b>=state.count)return;
+    [state.shots[a],state.shots[b]]=[state.shots[b],state.shots[a]];
+    // Occupancy remains contiguous by capture order only if both are filled.
+    if(state.active<state.count&&(!state.shots.slice(0,state.active).every(Boolean)||state.shots.slice(state.active).some(Boolean))){
+      [state.shots[a],state.shots[b]]=[state.shots[b],state.shots[a]];
+      setStatus('Chỉ hoán đổi những ô đã chụp.');return;
+    }
+    state.swapFrom=-1;state.selected=b;render();setStatus('Đã đổi vị trí ảnh '+(a+1)+' và '+(b+1)+'.');
+  }
+  function selectSlot(i){
+    if(state.swapFrom!==-1&&state.swapFrom!==i&&state.shots[state.swapFrom]&&state.shots[i]){
+      swap(state.swapFrom,i);return;
+    }
+    state.selected=i;
+    state.swapFrom=state.shots[i]?i:-1;
+    updateSizeControl();render();
+  }
+  function updateSizeControl(){
+    const r=state.rects[state.selected]||state.rects[0];
+    const base=studio.cloneRects(state.count,state.layout)[state.selected]||r;
+    const value=Math.round(r.w/base.w*100);
+    $('slotSize').value=String(Math.max(60,Math.min(140,value)));
+    $('slotSizeValue').textContent=$('slotSize').value+'%';
+  }
+  function changeMode(count){
+    if(count===state.count)return;
+    if(hasShot()&&!window.confirm('Đổi chế độ sẽ xóa các ảnh đang chụp. Tiếp tục?'))return;
+    state.count=count;state.layout='vertical';state.rects=studio.cloneRects(count,'vertical');
+    state.shots=Array.from({length:count},()=>null);state.active=0;state.selected=0;state.swapFrom=-1;
+    state.manual=false;$('manualPosition').checked=false;$('sizeControl').hidden=true;
+    viewport.classList.remove('drag-enabled');
+    document.querySelectorAll('.mode-option').forEach(b=>b.classList.toggle('active',Number(b.dataset.count)===count));
+    resizeCanvas();showLayouts();showFrames();render();refreshPreviews(true);
+  }
+  function showLayouts(){
+    const box=$('layoutOptions');box.replaceChildren();
+    for(const item of studio.layouts){
+      const b=document.createElement('button');b.type='button';b.textContent=item.label;
+      b.className='layout-option'+(state.layout===item.id?' active':'');b.dataset.layout=item.id;
+      b.disabled=state.count===1&&item.id!=='vertical';
+      b.addEventListener('click',()=>{
+        state.layout=item.id;state.rects=studio.cloneRects(state.count,item.id);
+        state.selected=Math.min(state.selected,state.count-1);showLayouts();updateSizeControl();render();refreshPreviews(true);
+      });box.appendChild(b);
+    }
   }
   function showFilters(){
     const box=$('filters');box.replaceChildren();
-    for(const preset of filters.presets){
-      if(category!=='all'&&group(preset)!==category)continue;
-      const btn=document.createElement('button');
-      btn.className='filter-option'+(preset.id===filter.id?' active':'');
-      btn.type='button';btn.dataset.value=preset.id;btn.setAttribute('aria-pressed',String(preset.id===filter.id));
-      const image=document.createElement('img');
-      image.className='filter-preview filter-preview-image';image.alt='Ảnh mẫu '+preset.label;
-      image.style.filter=preset.css;if(lastThumb)image.src=lastThumb;
-      const label=document.createElement('span');label.className='filter-label';label.textContent=preset.label;
+    for(const f of filters.presets){
+      const isFilm=['antique','retro','vintage','polaroid','kodachrome','technicolor','cookie','brownie','pinhole','clarendon','juno','lark','reyes','crema','aden','ludwig'].includes(f.id);
+      const isPortrait=['none','color','cool','warm','grayscale','soft-portrait','everglow','pink','washed','summer','aqua','green','blue','sepia'].includes(f.id);
+      const category=isFilm?'film':isPortrait?'portrait':'creative';
+      if(state.category!=='all'&&state.category!==category)continue;
+      const b=document.createElement('button');b.type='button';b.dataset.value=f.id;
+      b.className='filter-option'+(f.id===state.filter.id?' active':'');
+      const img=document.createElement('img');img.className='filter-preview filter-preview-image';
+      img.alt='Mẫu '+f.label;img.style.filter=f.css;
+      if(state.previewImage)img.src=state.previewImage;
+      const label=document.createElement('span');label.className='filter-label';label.textContent=f.label;
       const check=document.createElement('span');check.className='check';check.textContent='✓';
-      btn.append(image,check,label);
-      btn.addEventListener('click',()=>{filter=preset;video.style.filter=filter.css;showFilters();renderStrip();updateThumbnails();});
-      box.appendChild(btn);
+      b.append(img,check,label);
+      b.addEventListener('click',()=>{state.filter=f;showFilters();render();refreshPreviews(true);});
+      box.appendChild(b);
     }
   }
   function showFrames(){
     const box=$('frames');box.replaceChildren();
-    for(const preset of frames.frames){
-      const btn=document.createElement('button');
-      btn.className='filter-option'+(preset.id===frame.id?' active':'');
-      btn.type='button';btn.dataset.value=preset.id;btn.setAttribute('aria-pressed',String(preset.id===frame.id));
-      const image=document.createElement('canvas');
-      image.className='filter-preview frame-preview';image.width=120;image.height=300;image.dataset.frame=preset.id;
-      const label=document.createElement('span');label.className='filter-label';label.textContent=preset.label;
+    const shown=studio.frames.filter(f=>state.frameCategory==='all'||f.category===state.frameCategory);
+    for(const f of shown){
+      const b=document.createElement('button');b.type='button';b.dataset.value=f.id;
+      b.className='filter-option'+(f.id===state.frame.id?' active':'');
+      const c=document.createElement('canvas');c.width=110;c.height=state.count===1?150:state.count===3?250:305;
+      c.className='filter-preview frame-preview';c.dataset.frame=f.id;
+      const label=document.createElement('span');label.className='filter-label';label.textContent=f.label;
       const check=document.createElement('span');check.className='check';check.textContent='✓';
-      btn.append(image,check,label);
-      btn.addEventListener('click',()=>{frame=preset;showFrames();renderStrip();updateThumbnails();});
-      box.appendChild(btn);
+      b.append(c,check,label);
+      b.addEventListener('click',()=>{state.frame=f;showFrames();render();refreshPreviews(true);});
+      box.appendChild(b);
     }
+    refreshPreviews(true);
   }
-  document.querySelectorAll('.editor-tab').forEach(tab=>tab.addEventListener('click',()=>{
-    const onFrame=tab.dataset.editor==='frame';
-    $('filterPanel').hidden=onFrame;$('framePanel').hidden=!onFrame;
-    document.querySelectorAll('.editor-tab').forEach(b=>{
-      const selected=b===tab;b.classList.toggle('active',selected);
-      b.setAttribute('aria-selected',String(selected));
+  let refreshLock=false;
+  function refreshPreviews(includeFrames=false){
+    if(refreshLock)return;
+    refreshLock=true;
+    requestAnimationFrame(()=>{
+      refreshLock=false;
+      const sample=photoSample();
+      try{
+        const uri=sample.toDataURL('image/jpeg',.7);state.previewImage=uri;
+        document.querySelectorAll('.filter-preview-image').forEach(img=>{img.src=uri;});
+      }catch{}
+      if(includeFrames||!$('framePanel').hidden){
+        let filtered=sample;
+        try{filtered=filteredShot(sample);}catch{}
+        document.querySelectorAll('.frame-preview').forEach(c=>{
+          studio.render(c,{count:state.count,layout:state.layout,
+            rects:state.rects,shots:Array.from({length:state.count},()=>filtered),
+            frame:c.dataset.frame,preFiltered:true,preview:false});
+        });
+      }
     });
-    updateThumbnails();
-  }));
-  document.querySelectorAll('.chip').forEach(b=>b.addEventListener('click',()=>{
-    category=b.dataset.category;document.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',c===b));
-    showFilters();updateThumbnails();
-  }));
-  function currentSlot(){
-    const rects=strip.layout(preview.width,preview.height).rects;
-    return rects[Math.min(active,2)];
   }
-  function positionVideo(){
-    if(!stream||active>=3){video.style.display='none';return;}
-    const {x,y,w,h}=currentSlot();
-    video.style.left=(x/preview.width*100)+'%';
-    video.style.top=(y/preview.height*100)+'%';
-    video.style.width=(w/preview.width*100)+'%';
-    video.style.height=(h/preview.height*100)+'%';
-    video.style.display='block';
-    video.style.filter=filter.css;
-    video.classList.toggle('mirror',facing==='user');
-  }
-  function renderStrip(){
-    preview.width=480;preview.height=1200;
-    strip.draw(preview,shots,filter,frame.id,filters);
-    preview.style.display='block';empty.hidden=true;
-    counter.textContent=active+' / 3';
-    shoot.textContent=active<3?'● Chụp ô '+(active+1)+'/3':'✓ Đã đủ 3 ảnh';
-    shoot.disabled=active>=3||!stream;
-    retake.hidden=active===0;reset.hidden=active===0;
-    download.disabled=active!==3;
-    positionVideo();
-  }
-  function stopCamera(){
-    if(stream)stream.getTracks().forEach(track=>track.stop());
-    stream=null;video.srcObject=null;
-    if(thumbTimer){clearInterval(thumbTimer);thumbTimer=null;}
+  function stopStream(){
+    if(state.stream)state.stream.getTracks().forEach(t=>t.stop());
+    state.stream=null;video.srcObject=null;
+    if(state.thumbTimer){clearInterval(state.thumbTimer);state.thumbTimer=null;}
     video.style.display='none';
   }
   async function openCamera(){
-    if(!secure){security.hidden=false;setStatus('Safari yêu cầu HTTPS tin cậy để mở camera.');return;}
-    if(busy)return;
-    busy=true;start.disabled=true;stopCamera();
+    if(!secure){security.hidden=false;setStatus('Safari cần HTTPS tin cậy để mở camera.');return;}
+    if(state.busy||state.active>=state.count)return;
+    state.busy=true;start.disabled=true;stopStream();
     try{
-      stream=await navigator.mediaDevices.getUserMedia({
-        audio:false,video:{facingMode:{ideal:facing},width:{ideal:1920},height:{ideal:1440}}
-      });
-      video.srcObject=stream;await video.play();
-      start.hidden=true;flip.disabled=false;
-      security.hidden=true;renderStrip();updateThumbnails();
-      thumbTimer=setInterval(()=>{if(stream&&document.visibilityState!=='hidden')updateThumbnails();},2200);
-      setStatus('Mỗi lần chụp điền một ô. Chọn filter và khung, chụp đủ 3 ảnh để tải dải ảnh.');
-    }catch(e){
-      setStatus('Không mở được camera: '+(e.name||'Error')+' — '+(e.message||'kiểm tra quyền Camera.'));
-      security.hidden=!(e.name==='NotAllowedError');
-    }finally{busy=false;start.disabled=false;}
+      state.stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{
+        facingMode:{ideal:state.facing},width:{ideal:1920},height:{ideal:1440}}});
+      video.srcObject=state.stream;await video.play();
+      start.hidden=true;flip.disabled=false;security.hidden=true;
+      render();refreshPreviews(true);
+      state.thumbTimer=setInterval(()=>{if(state.stream&&!document.hidden)refreshPreviews(false);},3000);
+      setStatus('Camera sẵn sàng. Chụp ô '+(state.active+1)+'/'+state.count+'.');
+    }catch(e){setStatus('Không mở được camera: '+(e.name||'Error')+' — '+(e.message||'kiểm tra quyền Camera.'));
+      security.hidden=e.name!=='NotAllowedError';
+    }finally{state.busy=false;start.disabled=false;}
   }
-  function takePhoto(){
-    if(!stream||!video.videoWidth||active>=3){setStatus('Camera chưa sẵn sàng.');return;}
-    const sourceWidth=video.videoWidth,sourceHeight=video.videoHeight;
-    // Preserve full source aspect ratio: no hard-coded 960x1200 portrait stretching.
-    const scale=Math.min(1,1920/Math.max(sourceWidth,sourceHeight));
+  function capture(){
+    if(!state.stream||!video.videoWidth||state.active>=state.count)return;
+    const scale=Math.min(1,1600/Math.max(video.videoWidth,video.videoHeight));
     const raw=document.createElement('canvas');
-    raw.width=Math.max(1,Math.round(sourceWidth*scale));
-    raw.height=Math.max(1,Math.round(sourceHeight*scale));
+    raw.width=Math.round(video.videoWidth*scale);raw.height=Math.round(video.videoHeight*scale);
     const ctx=raw.getContext('2d');
-    if(facing==='user'){ctx.translate(raw.width,0);ctx.scale(-1,1);}
+    if(state.facing==='user'){ctx.translate(raw.width,0);ctx.scale(-1,1);}
     ctx.drawImage(video,0,0,raw.width,raw.height);
-    shots[active]=raw;active++;
-    if(active===3){stopCamera();flip.disabled=true;}
-    renderStrip();updateThumbnails();
-    setStatus(active===3?'Đã đủ 3 ảnh. Có thể đổi filter/khung, sau đó Download.':'Đã chụp ô '+active+'/3. Tiếp tục chụp ô '+(active+1)+'/3.');
+    state.shots[state.active]=raw;state.active++;
+    if(state.active===state.count){stopStream();flip.disabled=true;}
+    state.selected=Math.min(state.active,state.count-1);
+    state.swapFrom=-1;render();refreshPreviews(true);
+    setStatus(state.active===state.count?'Đã đủ ảnh. Sắp xếp lại và tải về.':'Đã chụp '+state.active+'/'+state.count+'. Tiếp tục chụp ô '+(state.active+1)+'.');
   }
   function retakeLast(){
-    if(active===0)return;
-    active--;shots[active]=null;
-    renderStrip();updateThumbnails();
-    if(stream){setStatus('Đã xóa ô '+(active+1)+'. Chụp lại ô này.');}
-    else openCamera();
+    if(!state.active)return;
+    state.active--;state.shots[state.active]=null;state.selected=state.active;
+    state.swapFrom=-1;render();refreshPreviews(true);
+    if(!state.stream)openCamera();
   }
-  function resetStrip(){
-    for(let i=0;i<3;i++)shots[i]=null;
-    active=0;renderStrip();updateThumbnails();
-    if(stream)setStatus('Đã làm lại dải ảnh. Bắt đầu từ ô 1/3.');
-    else openCamera();
+  function restart(){
+    state.shots=Array.from({length:state.count},()=>null);
+    state.active=0;state.selected=0;state.swapFrom=-1;render();refreshPreviews(true);
+    if(!state.stream)openCamera();
   }
-  async function savePhoto(){
-    if(active!==3)return;
+  async function exportPhoto(){
+    if(state.active!==state.count)return;
     download.disabled=true;
     try{
-      // Full-size portrait strip: 1200 x 3000, 3 individual uncropped images.
-      const output=document.createElement('canvas');output.width=1200;output.height=3000;
-      strip.draw(output,shots,filter,frame.id,filters);
+      const dim=studio.dimensions(state.count);
+      const output=document.createElement('canvas');output.width=dim.w;output.height=dim.h;
+      studio.render(output,{count:state.count,layout:state.layout,rects:state.rects,
+        shots:renderedShots(),frame:state.frame.id,preFiltered:true,preview:false});
       const blob=await new Promise((resolve,reject)=>output.toBlob(
-        b=>b?resolve(b):reject(Error('Không thể tạo ảnh JPEG.')),'image/jpeg',.94));
+        b=>b?resolve(b):reject(Error('Không thể xuất ảnh JPEG')),'image/jpeg',.94));
       const url=URL.createObjectURL(blob),a=document.createElement('a');
-      a.href=url;a.download='bloombooth-strip-3-'+Date.now()+'.jpg';
+      a.href=url;a.download='bloombooth-'+state.count+'-photo-'+Date.now()+'.jpg';
       document.body.appendChild(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(url),60000);
-      setStatus('Đã xuất dải ảnh 1200 × 3000 px. Trên iPhone có thể chọn Chia sẻ → Lưu vào Ảnh.');
-    }catch(e){setStatus('Lỗi tải ảnh: '+e.message);}finally{download.disabled=false;}
+      setStatus('Đã tạo JPEG '+dim.w+' × '+dim.h+' px. Safari: Chia sẻ → Lưu vào Ảnh.');
+    }catch(e){setStatus('Lỗi Download: '+e.message);}finally{download.disabled=false;}
   }
+  for(const b of document.querySelectorAll('.mode-option'))b.addEventListener('click',()=>changeMode(Number(b.dataset.count)));
+  for(const b of document.querySelectorAll('.editor-tab'))b.addEventListener('click',()=>{
+    const isFrame=b.dataset.editor==='frame';
+    $('filterPanel').hidden=isFrame;$('framePanel').hidden=!isFrame;
+    document.querySelectorAll('.editor-tab').forEach(x=>{
+      x.classList.toggle('active',x===b);x.setAttribute('aria-selected',String(x===b));
+    });
+    refreshPreviews(isFrame);
+  });
+  document.querySelectorAll('#categories .chip').forEach(b=>b.addEventListener('click',()=>{
+    state.category=b.dataset.category;
+    document.querySelectorAll('#categories .chip').forEach(x=>x.classList.toggle('active',x===b));
+    showFilters();refreshPreviews(false);
+  }));
+  document.querySelectorAll('#frameCategories .chip').forEach(b=>b.addEventListener('click',()=>{
+    state.frameCategory=b.dataset.frameCategory;
+    document.querySelectorAll('#frameCategories .chip').forEach(x=>x.classList.toggle('active',x===b));
+    showFrames();
+  }));
+  $('manualPosition').addEventListener('change',e=>{
+    state.manual=e.target.checked;$('sizeControl').hidden=!state.manual;
+    viewport.classList.toggle('drag-enabled',state.manual);
+    updateSizeControl();render();
+  });
+  $('resetLayout').addEventListener('click',()=>{
+    state.rects=studio.cloneRects(state.count,state.layout);
+    updateSizeControl();render();refreshPreviews(true);
+  });
+  $('slotSize').addEventListener('input',e=>{
+    const selected=state.selected,r=state.rects[selected];
+    const base=studio.cloneRects(state.count,state.layout)[selected];
+    const factor=Number(e.target.value)/100;
+    const centerX=r.x+r.w/2,centerY=r.y+r.h/2;
+    state.rects[selected]=studio.constrain({
+      x:centerX-base.w*factor/2,y:centerY-base.h*factor/2,w:base.w*factor,h:base.h*factor});
+    $('slotSizeValue').textContent=e.target.value+'%';render();
+  });
+  let pointer=null;
+  viewport.addEventListener('pointerdown',e=>{
+    if(!state.manual)return;
+    const r=viewport.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+    const index=studio.hit(state.rects,x,y);
+    if(index<0)return;
+    state.selected=index;state.swapFrom=-1;
+    const slot=state.rects[index];
+    pointer={id:e.pointerId,index,dx:x-slot.x,dy:y-slot.y};
+    viewport.setPointerCapture?.(e.pointerId);
+    updateSizeControl();render();
+  });
+  viewport.addEventListener('pointermove',e=>{
+    if(!pointer||e.pointerId!==pointer.id)return;
+    e.preventDefault();
+    const b=viewport.getBoundingClientRect();
+    const x=(e.clientX-b.left)/b.width-pointer.dx;
+    const y=(e.clientY-b.top)/b.height-pointer.dy;
+    state.rects[pointer.index]=studio.constrain({...state.rects[pointer.index],x,y});
+    renderCanvas();
+  });
+  const endPointer=e=>{if(pointer&&e.pointerId===pointer.id){
+    pointer=null;refreshPreviews(true);
+  }};
+  viewport.addEventListener('pointerup',endPointer);
+  viewport.addEventListener('pointercancel',endPointer);
   start.addEventListener('click',openCamera);
-  flip.addEventListener('click',()=>{facing=facing==='user'?'environment':'user';openCamera();});
-  shoot.addEventListener('click',takePhoto);
+  flip.addEventListener('click',()=>{state.facing=state.facing==='user'?'environment':'user';openCamera();});
+  shoot.addEventListener('click',capture);
   retake.addEventListener('click',retakeLast);
-  reset.addEventListener('click',resetStrip);
-  download.addEventListener('click',savePhoto);
-  window.addEventListener('pagehide',stopCamera);
-  if(!secure){security.hidden=false;setStatus('Camera bị chặn qua HTTP. Vui lòng sử dụng HTTPS.');}
-  showFilters();showFrames();renderStrip();updateThumbnails();
+  reset.addEventListener('click',restart);
+  download.addEventListener('click',exportPhoto);
+  window.addEventListener('pagehide',stopStream);
+  if(!secure){security.hidden=false;setStatus('Camera live cần HTTPS tin cậy.');}
+  resizeCanvas();showLayouts();showFilters();showFrames();render();refreshPreviews(true);
 })();

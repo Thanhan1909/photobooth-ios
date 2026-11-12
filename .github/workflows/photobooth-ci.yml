@@ -38,16 +38,16 @@ jobs:
           docker compose exec -T photobooth node --check /app/mobile/filter-engine.js
           docker compose exec -T photobooth node --check /app/mobile/lite.js
           docker compose exec -T photobooth node --check /app/mobile/frame-engine.js
-          docker compose exec -T photobooth node --check /app/mobile/strip-engine.js
+          docker compose exec -T photobooth node --check /app/mobile/studio-engine.js
           docker compose exec -T photobooth node /app/tests/mobile-filter-engine.test.cjs
-          docker compose exec -T photobooth node /app/tests/mobile-lite.test.cjs
+          docker compose exec -T photobooth node /app/tests/mobile-studio-v2.test.cjs
           docker compose exec -T photobooth php -l /app/index.php
           curl --fail --silent --show-error http://localhost:8085/mobile/ | grep -q 'BloomBooth'
           curl --fail --silent --show-error http://localhost:8085/mobile/filter-engine.js | grep -q 'PhotoboothFilters'
           curl --fail --silent --show-error http://localhost:8085/mobile/lite.js | grep -q 'getUserMedia'
           curl --fail --silent --show-error http://localhost:8085/mobile/frame-engine.js | grep -q 'BloomFrames'
-          curl --fail --silent --show-error http://localhost:8085/mobile/strip-engine.js | grep -q 'BloomStrip'
-          curl --fail --silent --show-error http://localhost:8085/mobile/lite.css | grep -q 'frame-preview'
+          curl --fail --silent --show-error http://localhost:8085/mobile/studio-engine.js | grep -q 'BloomStudio'
+          curl --fail --silent --show-error http://localhost:8085/mobile/lite.css | grep -q 'mode-options'
           test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8085/)" = 302
       - name: Publish approved commit for Windows deployment
         run: |

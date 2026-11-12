@@ -1,51 +1,58 @@
 <!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#fff8f2">
-  <title>BloomBooth — Camera, Filter & Download</title>
-  <link rel="stylesheet" href="/mobile/lite.css?v=7">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#fff8f2"><title>BloomBooth — Photo Studio</title>
+<link rel="stylesheet" href="/mobile/lite.css?v=8">
 </head>
 <body>
-<header class="header"><div class="brand"><span class="flower">✿</span><span>BLOOM<span class="accent">BOOTH</span><small>YOUR PHOTO STUDIO</small></span></div><span class="head-note">Chạm để lưu khoảnh khắc của bạn ♡</span></header>
+<header class="header"><div class="brand"><span class="flower">✿</span><span>BLOOM<span class="accent">BOOTH</span><small>YOUR PHOTO STUDIO</small></span></div><span class="head-note">Chụp ảnh, chọn khung, lưu khoảnh khắc ♡</span></header>
 <main class="wrap">
-  <section class="intro"><span class="overline">✦ LITTLE MOMENTS, BIG SMILES</span><h1>3 tấm ảnh, <em>1 dải kỷ niệm.</em></h1><p>Chụp lần lượt 3 ô, chọn filter và khung, sau đó tải về một ảnh photobooth dài.</p></section>
-  <div class="layout">
-    <section class="camera-panel" aria-label="Camera BloomBooth">
-      <div class="section-top"><span class="live-dot"></span><strong>CAMERA STUDIO</strong><span id="shotCounter" class="camera-counter">0 / 3</span></div>
-      <div class="viewport" id="viewport">
-        <canvas id="snapshot" aria-label="Dải photobooth gồm 3 ảnh"></canvas>
-        <video id="camera" autoplay playsinline muted></video>
-        <div id="empty" class="empty"><div class="photo-card">✿<span class="spark">✧</span></div><h2>Ghi lại nụ cười của bạn</h2><p>Chạm “Mở camera” để bắt đầu.</p></div>
-        <div id="countdown" class="countdown" hidden></div>
-      </div>
-      <div id="security" class="alert" hidden><strong>Safari cần HTTPS để mở camera trực tiếp.</strong><span>Trang hiện dùng HTTP nên trình duyệt iPhone không cấp quyền camera. Hãy truy cập qua địa chỉ HTTPS tin cậy.</span></div>
-      <div class="actions">
-        <button id="start" class="btn btn-primary">◉ Mở camera</button>
-        <button id="flip" class="btn btn-outline" disabled>⇄ Đổi camera</button>
-        <button id="shoot" class="btn btn-coral" disabled>● Chụp ô 1/3</button>
-        <button id="retake" class="btn btn-outline" hidden>↻ Chụp lại ô trước</button>
-        <button id="resetStrip" class="btn btn-outline" hidden>✕ Làm lại từ đầu</button>
-      </div>
-      <p id="status" role="status" class="status">Sẵn sàng mở camera.</p>
-    </section>
-    <section class="edit-panel" aria-label="Bộ lọc và tải ảnh">
-      <div class="edit-head"><div><span class="overline">MAKE IT YOURS</span><h2>3 khoảnh khắc, 1 dải ảnh <span>♡</span></h2><p>Mỗi lần chụp sẽ điền một ô trong dải 3 ảnh. Chọn màu và mẫu khung trước hoặc sau khi chụp.</p></div><span class="decorate">✿</span></div>
-      <div class="editor-tabs" role="tablist" aria-label="Công cụ chỉnh ảnh"><button id="filterTab" class="editor-tab active" data-editor="filter" role="tab" aria-selected="true">◈ Bộ lọc màu</button><button id="frameTab" class="editor-tab" data-editor="frame" role="tab" aria-selected="false">▣ Khung 3 ảnh</button></div>
-      <div id="filterPanel" role="tabpanel">
-      <div class="chips" id="categories"><button class="chip active" data-category="all">Tất cả</button><button class="chip" data-category="portrait">Chân dung</button><button class="chip" data-category="film">Film & Retro</button><button class="chip" data-category="creative">Sáng tạo</button></div>
-      <div id="filters" class="filters" aria-label="Chọn bộ lọc"></div>
-      </div>
-      <div id="framePanel" role="tabpanel" hidden><p class="frame-intro">Mỗi mẫu có 3 ô ảnh xếp dọc. Mỗi lần chụp chỉ điền một ô. Ảnh Download sẽ là một strip hoàn chỉnh.</p><div id="frames" class="filters" aria-label="Mẫu khung ảnh"></div></div>
-      <div class="download-panel"><div><b>Dải ảnh 3 tấm của bạn ♡</b><small>Chụp đủ 3 ô để Download JPEG 1200 × 3000 px. Không upload lên server.</small></div><button id="download" class="btn btn-download" disabled>⇩ Download ảnh <span>→</span></button></div>
-    </section>
+<section class="intro"><span class="overline">MAKE YOUR OWN MEMORIES</span><h1>Chụp một tấm, <em>hoặc cả câu chuyện.</em></h1><p>1 ảnh độc lập hoặc nhiều ảnh trong một khung. Bạn tự chọn bố cục và vị trí của từng ô.</p></section>
+<div class="layout">
+<section class="camera-panel" aria-label="Máy ảnh BloomBooth">
+  <div class="section-top"><span class="live-dot"></span><strong>CAMERA STUDIO</strong><span id="shotCounter" class="camera-counter">0 / 3</span></div>
+  <div class="viewport" id="viewport"><canvas id="snapshot" aria-label="Bố cục ảnh Photobooth"></canvas><video id="camera" autoplay playsinline muted></video><div id="empty" class="empty" hidden></div></div>
+  <div id="security" class="alert" hidden><strong>Camera iPhone cần HTTPS tin cậy.</strong><span>Hãy mở bằng link HTTPS của BloomBooth, cài chứng chỉ nội bộ rồi cho phép Safari sử dụng camera.</span></div>
+  <div class="actions">
+    <button type="button" id="start" class="btn btn-primary">◉ Mở camera</button>
+    <button type="button" id="flip" class="btn btn-outline" disabled>⇄ Đổi camera</button>
+    <button type="button" id="shoot" class="btn btn-coral" disabled>● Chụp ô 1/3</button>
+    <button type="button" id="retake" class="btn btn-outline" hidden>↻ Chụp lại ô cuối</button>
+    <button type="button" id="resetStrip" class="btn btn-outline" hidden>↺ Chụp bộ mới</button>
   </div>
-  <footer>BloomBooth Studio ✿ Made for your little moments</footer>
+  <p class="status" id="status" role="status">Sẵn sàng. Chọn chế độ rồi mở camera.</p>
+  <div class="slot-editor">
+    <div class="slot-header"><b>Ảnh đã chụp & thứ tự</b><small>Chạm 2 ảnh để hoán đổi vị trí hoặc kéo thả</small></div>
+    <div id="shotSlots" class="shot-slots" aria-label="Sắp xếp thứ tự ảnh"></div>
+  </div>
+</section>
+<section class="edit-panel" aria-label="Tùy chỉnh BloomBooth">
+  <div class="edit-head"><div><span class="overline">CREATE YOUR OWN STRIP</span><h2>Studio của bạn <span>♡</span></h2><p>Chọn chế độ, bố cục, khung và màu yêu thích.</p></div><span class="decorate">✿</span></div>
+  <section class="setup-section" aria-label="Chế độ chụp">
+    <div class="control-label">01 — Chế độ chụp</div>
+    <div class="mode-options" id="modeOptions">
+      <button type="button" data-count="1" class="mode-option">1 ảnh <small>Ảnh đơn</small></button>
+      <button type="button" data-count="3" class="mode-option active">3 ảnh <small>Photo strip</small></button>
+      <button type="button" data-count="5" class="mode-option">5 ảnh <small>Collage</small></button>
+    </div>
+    <div class="control-label layout-title">02 — Bố cục các ô ảnh</div>
+    <div class="layout-options" id="layoutOptions"></div>
+    <label class="manual-toggle"><input id="manualPosition" type="checkbox"><span>Tự kéo thả vị trí ô ảnh trên bản xem trước</span></label>
+    <div class="size-control" id="sizeControl" hidden><label for="slotSize">Kích cỡ ô đang chọn</label><input id="slotSize" type="range" min="60" max="140" step="5" value="100"><output id="slotSizeValue">100%</output><button id="resetLayout" class="text-button" type="button">Đặt lại bố cục</button></div>
+    <p class="help-text">Khi bật chỉnh tay: chạm ô trên bản xem trước rồi kéo ô đến vị trí muốn đặt. Ảnh có thể chồng nhau với kiểu collage.</p>
+  </section>
+  <nav class="editor-tabs" role="tablist" aria-label="Công cụ chỉnh sửa"><button class="editor-tab active" type="button" id="filterTab" data-editor="filter" role="tab" aria-selected="true">◈ Filter màu</button><button class="editor-tab" type="button" id="frameTab" data-editor="frame" role="tab" aria-selected="false">▣ Khung ảnh</button></nav>
+  <section id="filterPanel" role="tabpanel"><div class="chips" id="categories"><button class="chip active" data-category="all">Tất cả</button><button class="chip" data-category="portrait">Chân dung</button><button class="chip" data-category="film">Film & Retro</button><button class="chip" data-category="creative">Sáng tạo</button></div><div id="filters" class="filters" aria-label="Chọn filter"></div></section>
+  <section id="framePanel" role="tabpanel" hidden>
+    <div class="chips" id="frameCategories"><button class="chip active" data-frame-category="all">Tất cả</button><button class="chip" data-frame-category="trend">Hot trend</button><button class="chip" data-frame-category="cute">Dễ thương</button><button class="chip" data-frame-category="retro">Retro</button><button class="chip" data-frame-category="classic">Tối giản</button></div>
+    <p class="frame-intro">49 mẫu khung tự vẽ, gồm Y2K, Coquette, Kawaii, Vintage, Editorial và Sticker. Mẫu hiển thị đúng bố cục đang chọn.</p>
+    <div id="frames" class="filters" aria-label="49 mẫu khung ảnh"></div>
+  </section>
+  <div class="download-panel"><div><b>Một file ảnh chứa đúng bố cục bạn chọn</b><small id="downloadDescription">Chụp đủ 3 ảnh để tải JPEG, không upload lên server.</small></div><button type="button" id="download" class="btn btn-download" disabled>⇩ Download ảnh <span>→</span></button></div>
+</section></div><footer>BloomBooth Studio ✿ Made for your little moments</footer>
 </main>
-<script src="/mobile/filter-engine.js?v=6" defer></script>
-<script src="/mobile/frame-engine.js?v=7" defer></script>
-<script src="/mobile/strip-engine.js?v=7" defer></script>
-<script src="/mobile/lite.js?v=7" defer></script>
-</body>
-</html>
+<script src="/mobile/filter-engine.js?v=8" defer></script>
+<script src="/mobile/studio-engine.js?v=8" defer></script>
+<script src="/mobile/lite.js?v=8" defer></script>
+</body></html>

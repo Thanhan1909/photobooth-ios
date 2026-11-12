@@ -63,9 +63,9 @@ try {
   for ($i = 0; $i -lt 15; $i++) {
     try {
       $web = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8085/mobile/' -TimeoutSec 8
-      $strip = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8085/mobile/strip-engine.js' -TimeoutSec 8
-      if ($web.StatusCode -eq 200 -and $web.Content.Contains('shotCounter') -and
-          $strip.StatusCode -eq 200 -and $strip.Content.Contains('BloomStrip')) {
+      $studio = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8085/mobile/studio-engine.js' -TimeoutSec 8
+      if ($web.StatusCode -eq 200 -and $web.Content.Contains('modeOptions') -and
+          $studio.StatusCode -eq 200 -and $studio.Content.Contains('BloomStudio')) {
         $healthy = $true
         break
       }
