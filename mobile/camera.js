@@ -124,7 +124,7 @@
       download.hidden = false;
     }, 'image/jpeg', .95);
   }
-  $('pick').addEventListener('change', e => {
+  const handlePickedImage = e => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/') || file.size > 20 * 1024 * 1024) {
       setStatus('Chỉ chấp nhận ảnh nhỏ hơn 20 MB.'); return;
@@ -135,7 +135,9 @@
     result.onload = () => { result.onload = null; showResult(); };
     result.onerror = () => setStatus('Không đọc được ảnh.');
     result.src = objectUrl;
-  });
+  };
+  $('pick').addEventListener('change', handlePickedImage);
+  $('nativeCamera').addEventListener('change', handlePickedImage);
   start.addEventListener('click', openCamera);
   shoot.addEventListener('click', capture);
   switchBtn.addEventListener('click', () => { facing = facing === 'user' ? 'environment' : 'user'; openCamera(); });

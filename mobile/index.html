@@ -47,8 +47,10 @@ a.action{display:inline-flex;align-items:center;justify-content:center}
 <div id="filterList" class="filters" aria-label="Bộ lọc ảnh"></div>
 <p class="help">Filter được xem trước trực tiếp và lưu vào ảnh tải xuống. iPhone cần mở trang bằng HTTPS và cho phép Safari sử dụng camera. Không cần upload ảnh lên máy chủ.</p>
 <div id="fallback">
-<p class="help">Không mở được camera trực tiếp? Bạn có thể chọn ảnh từ máy để áp dụng filter và tải về.</p>
-<label class="action" for="pick">Chọn ảnh dự phòng</label>
+<p class="help">Nếu đang dùng HTTP trên iPhone, hãy chụp qua camera iOS rồi chọn filter và tải ảnh ngay. Ảnh không phải upload lên máy chủ.</p>
+<label class="action primary" for="nativeCamera">Chụp bằng camera iPhone</label>
+<input id="nativeCamera" type="file" accept="image/*" capture="environment" hidden>
+<label class="action" for="pick">Chọn ảnh có sẵn</label>
 <input id="pick" type="file" accept="image/*" hidden>
 </div>
 <canvas id="canvas" hidden></canvas>
