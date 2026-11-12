@@ -11,3 +11,15 @@ canvas.frame-preview{background:#faf0eb}
 .filter-option{overflow:hidden}
 .filter-option .filter-label{display:block}
 @media(max-width:430px){.filter-preview{height:88px}.editor-tab{font-size:11px;padding:12px 4px}}
+
+/* Three-shot vertical photobooth strip */
+.viewport{aspect-ratio:2/5;max-width:340px;margin:0 auto;border:8px solid #fce9e3}
+.viewport #snapshot{display:block;position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.viewport #camera{position:absolute;object-fit:contain;z-index:2;border:0;border-radius:1px;background:#eedbd6}
+.viewport .empty{display:none}
+.frame-preview{height:154px!important;object-fit:contain;background:#fff8f3}
+.filters{max-height:505px}
+.camera-panel .actions{gap:7px}
+.camera-panel .btn{flex:0 1 auto}
+@media(max-width:850px){.viewport{max-width:290px}}
+@media(max-width:430px){.viewport{max-width:min(275px,78vw)}.frame-preview{height:150px!important}}

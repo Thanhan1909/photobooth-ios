@@ -5,19 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#fff8f2">
   <title>BloomBooth — Camera, Filter & Download</title>
-  <link rel="stylesheet" href="/mobile/lite.css?v=6">
+  <link rel="stylesheet" href="/mobile/lite.css?v=7">
 </head>
 <body>
 <header class="header"><div class="brand"><span class="flower">✿</span><span>BLOOM<span class="accent">BOOTH</span><small>YOUR PHOTO STUDIO</small></span></div><span class="head-note">Chạm để lưu khoảnh khắc của bạn ♡</span></header>
 <main class="wrap">
-  <section class="intro"><span class="overline">✦ LITTLE MOMENTS, BIG SMILES</span><h1>Camera, filter <em>& những nụ cười.</em></h1><p>Chọn hiệu ứng bạn thích, chụp ảnh và tải về. Chỉ vậy thôi!</p></section>
+  <section class="intro"><span class="overline">✦ LITTLE MOMENTS, BIG SMILES</span><h1>3 tấm ảnh, <em>1 dải kỷ niệm.</em></h1><p>Chụp lần lượt 3 ô, chọn filter và khung, sau đó tải về một ảnh photobooth dài.</p></section>
   <div class="layout">
     <section class="camera-panel" aria-label="Camera BloomBooth">
-      <div class="section-top"><span class="live-dot"></span><strong>CAMERA STUDIO</strong><span class="camera-counter">01 / 01</span></div>
+      <div class="section-top"><span class="live-dot"></span><strong>CAMERA STUDIO</strong><span id="shotCounter" class="camera-counter">0 / 3</span></div>
       <div class="viewport" id="viewport">
+        <canvas id="snapshot" aria-label="Dải photobooth gồm 3 ảnh"></canvas>
         <video id="camera" autoplay playsinline muted></video>
-        <canvas id="snapshot" aria-label="Ảnh vừa chụp"></canvas>
-        <canvas id="frameOverlay" aria-hidden="true"></canvas>
         <div id="empty" class="empty"><div class="photo-card">✿<span class="spark">✧</span></div><h2>Ghi lại nụ cười của bạn</h2><p>Chạm “Mở camera” để bắt đầu.</p></div>
         <div id="countdown" class="countdown" hidden></div>
       </div>
@@ -25,26 +24,28 @@
       <div class="actions">
         <button id="start" class="btn btn-primary">◉ Mở camera</button>
         <button id="flip" class="btn btn-outline" disabled>⇄ Đổi camera</button>
-        <button id="shoot" class="btn btn-coral" disabled>● Chụp ảnh</button>
-        <button id="retake" class="btn btn-outline" hidden>↻ Chụp lại</button>
+        <button id="shoot" class="btn btn-coral" disabled>● Chụp ô 1/3</button>
+        <button id="retake" class="btn btn-outline" hidden>↻ Chụp lại ô trước</button>
+        <button id="resetStrip" class="btn btn-outline" hidden>✕ Làm lại từ đầu</button>
       </div>
       <p id="status" role="status" class="status">Sẵn sàng mở camera.</p>
     </section>
     <section class="edit-panel" aria-label="Bộ lọc và tải ảnh">
-      <div class="edit-head"><div><span class="overline">MAKE IT YOURS</span><h2>Thử trước khi chụp <span>♡</span></h2><p>Ảnh mẫu trong mỗi lựa chọn lấy từ camera hoặc ảnh vừa chụp.</p></div><span class="decorate">✿</span></div>
-      <div class="editor-tabs" role="tablist" aria-label="Công cụ chỉnh ảnh"><button id="filterTab" class="editor-tab active" data-editor="filter" role="tab" aria-selected="true">◈ Bộ lọc màu</button><button id="frameTab" class="editor-tab" data-editor="frame" role="tab" aria-selected="false">▣ Chọn khung ảnh</button></div>
+      <div class="edit-head"><div><span class="overline">MAKE IT YOURS</span><h2>3 khoảnh khắc, 1 dải ảnh <span>♡</span></h2><p>Mỗi lần chụp sẽ điền một ô trong dải 3 ảnh. Chọn màu và mẫu khung trước hoặc sau khi chụp.</p></div><span class="decorate">✿</span></div>
+      <div class="editor-tabs" role="tablist" aria-label="Công cụ chỉnh ảnh"><button id="filterTab" class="editor-tab active" data-editor="filter" role="tab" aria-selected="true">◈ Bộ lọc màu</button><button id="frameTab" class="editor-tab" data-editor="frame" role="tab" aria-selected="false">▣ Khung 3 ảnh</button></div>
       <div id="filterPanel" role="tabpanel">
       <div class="chips" id="categories"><button class="chip active" data-category="all">Tất cả</button><button class="chip" data-category="portrait">Chân dung</button><button class="chip" data-category="film">Film & Retro</button><button class="chip" data-category="creative">Sáng tạo</button></div>
       <div id="filters" class="filters" aria-label="Chọn bộ lọc"></div>
       </div>
-      <div id="framePanel" role="tabpanel" hidden><p class="frame-intro">Chọn mẫu để xem khung ngay trên camera. Ảnh tải về sẽ chứa đúng khung đã chọn.</p><div id="frames" class="filters" aria-label="Mẫu khung ảnh"></div></div>
-      <div class="download-panel"><div><b>Giữ lại khoảnh khắc ♡</b><small>Ảnh được xử lý trên thiết bị, không upload lên server.</small></div><button id="download" class="btn btn-download" disabled>⇩ Download ảnh <span>→</span></button></div>
+      <div id="framePanel" role="tabpanel" hidden><p class="frame-intro">Mỗi mẫu có 3 ô ảnh xếp dọc. Mỗi lần chụp chỉ điền một ô. Ảnh Download sẽ là một strip hoàn chỉnh.</p><div id="frames" class="filters" aria-label="Mẫu khung ảnh"></div></div>
+      <div class="download-panel"><div><b>Dải ảnh 3 tấm của bạn ♡</b><small>Chụp đủ 3 ô để Download JPEG 1200 × 3000 px. Không upload lên server.</small></div><button id="download" class="btn btn-download" disabled>⇩ Download ảnh <span>→</span></button></div>
     </section>
   </div>
   <footer>BloomBooth Studio ✿ Made for your little moments</footer>
 </main>
 <script src="/mobile/filter-engine.js?v=6" defer></script>
-<script src="/mobile/frame-engine.js?v=6" defer></script>
-<script src="/mobile/lite.js?v=6" defer></script>
+<script src="/mobile/frame-engine.js?v=7" defer></script>
+<script src="/mobile/strip-engine.js?v=7" defer></script>
+<script src="/mobile/lite.js?v=7" defer></script>
 </body>
 </html>

@@ -1,11 +1,13 @@
-# BloomBooth — Camera + Filters + Download
+# BloomBooth — 3-shot vertical photo strip
 
 ## UX
-- The public page is BloomBooth: **Open camera → Choose color filter and decorative frame → Take photo → Download JPG**.
+- The only public page is BloomBooth: **Open camera → Choose filter/frame → Take photo 1/3 → 2/3 → 3/3 → Download one vertical JPG strip**.
 - Both the 43 color filter cards and 10 decorative frame cards preview the user's current camera photo (or last capture); they use a sample portrait when camera is off.
-- Frame is previewed over the live camera, can be changed after capture and is embedded in the downloaded JPG.
+- Strip preview is always visible with three slots; each shutter press fills only the next slot. The selected decorative frame provides the strip theme; it can be changed after capture and is embedded in the downloaded JPG.
 - No background replacement, AI segmentation, uploads, photo pickers, or legacy navigation. Decorative frames are available.
-- 43 filter presets with CSS preview on live video; Canvas pixel processing generates the final JPEG without submitting photos to the server.
+- 43 filter presets with CSS preview on live video; Canvas pixel processing generates the final 1200×3000 JPEG strip without submitting photos to the server.
+- Preserve each original camera shot's aspect ratio (no forced 960×1200 portrait resize); each photo fits entirely within its slot over a blurred fill background. Full-quality shots remain separate until final export.
+- Only enable Download after three shots. Retake the most recent slot or reset the entire strip.
 - On Windows desktop: `http://localhost:8085/mobile/`; on iPhone **Safari live camera needs HTTPS**.
 
 ## HTTPS on iPhone (local LAN)
