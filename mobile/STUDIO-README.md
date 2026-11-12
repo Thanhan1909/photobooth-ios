@@ -1,8 +1,10 @@
 # BloomBooth — Camera + Filters + Download
 
 ## UX
-- The only public page is BloomBooth: **Open camera → Choose filter → Take photo → Download JPG**.
-- No backgrounds, frames, AI segmentation, uploads, photo pickers, or legacy navigation.
+- The public page is BloomBooth: **Open camera → Choose color filter and decorative frame → Take photo → Download JPG**.
+- Both the 43 color filter cards and 10 decorative frame cards preview the user's current camera photo (or last capture); they use a sample portrait when camera is off.
+- Frame is previewed over the live camera, can be changed after capture and is embedded in the downloaded JPG.
+- No background replacement, AI segmentation, uploads, photo pickers, or legacy navigation. Decorative frames are available.
 - 43 filter presets with CSS preview on live video; Canvas pixel processing generates the final JPEG without submitting photos to the server.
 - On Windows desktop: `http://localhost:8085/mobile/`; on iPhone **Safari live camera needs HTTPS**.
 
