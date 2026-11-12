@@ -1,5 +1,11 @@
 <?php
 
+// BloomBooth is the sole public landing page; legacy PHP endpoints remain available.
+if (parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) === '/') {
+    header('Location: /mobile/', true, 302);
+    exit;
+}
+
 require_once 'lib/boot.php';
 
 use Photobooth\Service\ApplicationService;

@@ -36,15 +36,15 @@ jobs:
       - name: Verify mobile camera assets
         run: |
           docker compose exec -T photobooth node --check /app/mobile/filter-engine.js
-          docker compose exec -T photobooth node --check /app/mobile/studio.js
+          docker compose exec -T photobooth node --check /app/mobile/lite.js
           docker compose exec -T photobooth node /app/tests/mobile-filter-engine.test.cjs
-          docker compose exec -T photobooth node /app/tests/mobile-studio.test.cjs
-          curl --fail --silent --show-error http://localhost:8085/mobile/ | grep -q 'Bloom Booth'
+          docker compose exec -T photobooth node /app/tests/mobile-lite.test.cjs
+          docker compose exec -T photobooth php -l /app/index.php
+          curl --fail --silent --show-error http://localhost:8085/mobile/ | grep -q 'BloomBooth'
           curl --fail --silent --show-error http://localhost:8085/mobile/filter-engine.js | grep -q 'PhotoboothFilters'
-          curl --fail --silent --show-error http://localhost:8085/mobile/studio.js | grep -q 'requestSegmentation'
-          curl --fail --silent --show-error http://localhost:8085/mobile/studio.css | grep -q 'studio'
-          curl --fail --silent --show-error http://localhost:8085/mobile/vendor/mediapipe/selfie_segmentation.js | grep -q 'SelfieSegmentation'
-          curl --fail --silent --output /dev/null http://localhost:8085/mobile/vendor/mediapipe/selfie_segmentation_solution_wasm_bin.wasm
+          curl --fail --silent --show-error http://localhost:8085/mobile/lite.js | grep -q 'getUserMedia'
+          curl --fail --silent --show-error http://localhost:8085/mobile/lite.css | grep -q 'filter-option'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8085/)" = 302
       - name: Publish approved commit for Windows deployment
         run: |
           git fetch origin main
