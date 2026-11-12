@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $repo = 'C:\Projects\photobooth-ios'
 $log = Join-Path $repo 'deploy\deploy.log'
+$deployedFile = Join-Path $repo 'deploy\deployed.sha'
 function Log([string]$message) {
   "[$(Get-Date -Format o)] $message" | Add-Content -Path $log
 }
@@ -9,8 +10,8 @@ try {
   $run = $runs.workflow_runs | Select-Object -First 1
   if (!$run -or $run.status -ne 'completed' -or $run.conclusion -ne 'success') { Log 'CI has not passed; skip'; exit 0 }
   Set-Location $repo
-  $current = (git rev-parse HEAD).Trim()
-  if ($current -eq $run.head_sha) { exit 0 }
+  $deployed = if (Test-Path $deployedFile) { (Get-Content $deployedFile -Raw).Trim() } else { '' }
+  if ($deployed -eq $run.head_sha) { exit 0 }
   if ((git status --porcelain --untracked-files=no).Length -gt 0) { Log 'Local tracked modifications present; skip'; exit 1 }
   git fetch origin main
   if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
@@ -22,5 +23,14 @@ try {
   if ($LASTEXITCODE -ne 0) { throw 'submodule failed' }
   docker compose up -d --build
   if ($LASTEXITCODE -ne 0) { throw 'Docker deployment failed' }
+  $healthy = $false
+  for ($i = 0; $i -lt 20; $i++) {
+    try {
+      $web = Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8085/mobile/' -TimeoutSec 10
+      if ($web.StatusCode -eq 200) { $healthy = $true; break }
+    } catch { Start-Sleep -Seconds 3 }
+  }
+  if (!$healthy) { throw 'Mobile HTTP health check failed; deployed marker not updated' }
+  Set-Content -Path $deployedFile -Value $remote -NoNewline
   Log "Deployed $remote"
 } catch { Log "ERROR: $_"; exit 1 }

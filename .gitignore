@@ -60,3 +60,4 @@ scripts/rembg_venv/
 
 # Local Windows CI/CD logs
 deploy/*.log
+deploy/*.sha
