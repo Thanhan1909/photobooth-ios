@@ -60,3 +60,12 @@ canvas.frame-preview{background:#faf0eb}
 .shot-slot:focus-visible{outline:3px solid #e78677;outline-offset:2px}
 @media(max-width:850px){.viewport{max-width:285px}}
 @media(max-width:430px){.viewport{max-width:min(288px,83vw)}.layout-options{grid-template-columns:repeat(2,minmax(0,1fr))}.mode-option{font-size:12px}.frame-preview{height:130px!important}.setup-section{padding:12px}}
+
+@media(max-width:850px){
+  .mode-options.quick-modes{max-width:560px;margin:0 auto 18px;padding:15px;background:#fff;
+    border:1px solid #f0e3dc;border-radius:17px;box-shadow:0 5px 25px #af827010}
+  .mode-options.quick-modes::before{content:'CHỌN CHẾ ĐỘ CHỤP';grid-column:1/-1;
+    text-align:center;font-size:10px;font-weight:850;letter-spacing:1.5px;color:#c27b75}
+  .setup-section>.control-label:first-child{display:none}
+  .setup-section>.layout-title{margin-top:0}
+}

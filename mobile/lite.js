@@ -43,7 +43,10 @@
     const dim=studio.dimensions(state.count);
     preview.width=420;preview.height=Math.round(dim.h*420/dim.w);
     viewport.style.aspectRatio=dim.w+'/'+dim.h;
-    viewport.style.maxWidth=state.count===1?'380px':state.count===3?'325px':'310px';
+    const narrow=window.matchMedia('(max-width:600px)').matches;
+    viewport.style.maxWidth=narrow
+      ? state.count===1?'285px':state.count===3?'215px':'168px'
+      : state.count===1?'380px':state.count===3?'325px':'310px';
   }
   function positionLive(){
     if(!state.stream||state.active>=state.count){video.style.display='none';return;}
@@ -261,6 +264,13 @@
       setStatus('Đã tạo JPEG '+dim.w+' × '+dim.h+' px. Safari: Chia sẻ → Lưu vào Ảnh.');
     }catch(e){setStatus('Lỗi Download: '+e.message);}finally{download.disabled=false;}
   }
+  function placeModeBar(){
+    const bar=$('modeOptions');
+    const narrow=window.matchMedia('(max-width:850px)').matches;
+    if(narrow){document.querySelector('.intro').after(bar);bar.classList.add('quick-modes');}
+    else{document.querySelector('.setup-section > .control-label').after(bar);bar.classList.remove('quick-modes');}
+    resizeCanvas();
+  }
   for(const b of document.querySelectorAll('.mode-option'))b.addEventListener('click',()=>changeMode(Number(b.dataset.count)));
   for(const b of document.querySelectorAll('.editor-tab'))b.addEventListener('click',()=>{
     const isFrame=b.dataset.editor==='frame';
@@ -332,5 +342,7 @@
   download.addEventListener('click',exportPhoto);
   window.addEventListener('pagehide',stopStream);
   if(!secure){security.hidden=false;setStatus('Camera live cần HTTPS tin cậy.');}
-  resizeCanvas();showLayouts();showFilters();showFrames();render();refreshPreviews(true);
+  placeModeBar();
+  window.addEventListener('resize',placeModeBar);
+  showLayouts();showFilters();showFrames();render();refreshPreviews(true);
 })();
