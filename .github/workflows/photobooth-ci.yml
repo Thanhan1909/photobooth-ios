@@ -29,6 +29,11 @@ jobs:
           done
           docker compose logs
           exit 1
+      - name: Verify mobile camera assets
+        run: |
+          docker compose exec -T photobooth node --check /app/mobile/camera.js
+          curl --fail --silent --show-error http://localhost:8085/mobile/ | grep -q 'Photobooth Camera'
+          curl --fail --silent --show-error http://localhost:8085/mobile/camera.js | grep -q 'getUserMedia'
       - name: Stop
         if: always()
         run: docker compose down
