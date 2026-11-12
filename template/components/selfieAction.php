@@ -10,6 +10,7 @@ $printManager = PrintManagerService::getInstance();
 echo '<div class="buttonbar">';
 
 echo '<div class="container" id="form-container">';
+echo '<a class="button" href="/mobile/" style="margin:8px;display:inline-flex;align-items:center;gap:8px;text-decoration:none"><i class="fa fa-camera"></i> Camera + Filters + Download</a>';
 echo '    <form id="selfieForm" enctype="multipart/form-data">';
 echo '       <label class="button take-selfie-btn" for="images" data-command="take-selfie">';
 echo '            <span class="button--icon"><i class="' . $config['icons']['take_picture'] . '"></i></span>';
