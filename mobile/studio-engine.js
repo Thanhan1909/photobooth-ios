@@ -1,24 +1,6 @@
 'use strict';
 window.BloomStudio = (() => {
-  const palettes = [
-    ['Classic Cream','#fff8ed','#685349','#d9bfa7'],
-    ['Coquette Pink','#ffe0ea','#a24f76','#f5a4bb'],
-    ['Y2K Chrome','#e6e8f2','#4e5a7e','#95aedc'],
-    ['Kawaii Peach','#ffe2cc','#a86471','#ffa6a3'],
-    ['Vintage Film','#e8d8bd','#63513f','#ac8a60'],
-    ['Noir Editorial','#272936','#f7f2e7','#a6a8b6'],
-    ['Sage Garden','#dce9d3','#51745a','#91b58d'],
-    ['Lavender Dream','#e9dcfa','#746193','#b6a0d8']
-  ];
-  const accents = [
-    ['Minimal','minimal'],['Ribbon','ribbon'],['Sticker Pop','sticker'],
-    ['Sparkle','sparkle'],['Doodle','doodle'],['Film Grain','film']
-  ];
-  const frames = [{id:'plain',label:'Original',category:'classic',bg:'#f9f5ec',ink:'#645c53',accent:'#dac8ae',decor:'minimal'}];
-  palettes.forEach(([name,bg,ink,accent],i) => accents.forEach(([decorName,decor],j) => {
-    const id='theme-'+i+'-'+j;
-    frames.push({id,label:name+' · '+decorName,category:i===1||i===3?'cute':i===2||i===7?'trend':i===4||i===5?'retro':'classic',bg,ink,accent,decor});
-  }));
+  const frames=window.BloomFrameArt.catalog;
   const layouts=[
     {id:'vertical',label:'Dải dọc'},
     {id:'grid',label:'Lưới ảnh'},
@@ -70,65 +52,46 @@ window.BloomStudio = (() => {
     for(let i=rects.length-1;i>=0;i--){const r=rects[i];if(x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h)return i;}
     return -1;
   }
-  function photo(ctx,img,r,w,h){
+  // Artwork shapes are deliberately varied, not color variants of a rectangle.
+  function shapePath(ctx,x,y,w,h,motif){
+    const oval=['gingham','moon','cloud','rainbow','night','sunset','seashell','wave'];
+    const arch=['ribbon','cherry','wildflower','botanical','graduation','christmas'];
+    const round=['duckling','strawberry','cherrysoda','lemon','matcha','birthday'];
+    const cut=['comic','arcade','pixel','ticket','concert','postcard','airmail'];
+    const r=Math.min(w,h)*.13;
+    ctx.beginPath();
+    if(oval.includes(motif)){
+      ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);
+    }else if(arch.includes(motif)){
+      ctx.moveTo(x,y+h);ctx.lineTo(x,y+w/2);
+      ctx.ellipse(x+w/2,y+w/2,w/2,w/2,0,Math.PI,0);
+      ctx.lineTo(x+w,y+h);ctx.closePath();
+    }else if(round.includes(motif)){
+      ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+      ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);
+      ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);
+      ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);
+      ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+    }else if(cut.includes(motif)){
+      ctx.moveTo(x+w*.08,y);ctx.lineTo(x+w*.92,y);
+      ctx.lineTo(x+w,y+h*.08);ctx.lineTo(x+w,y+h*.92);
+      ctx.lineTo(x+w*.92,y+h);ctx.lineTo(x+w*.08,y+h);
+      ctx.lineTo(x,y+h*.92);ctx.lineTo(x,y+h*.08);ctx.closePath();
+    }else{
+      ctx.rect(x,y,w,h);
+    }
+  }
+  function photo(ctx,img,r,w,h,style){
     const sw=img.width||img.videoWidth,sh=img.height||img.videoHeight;
     if(!sw||!sh)return;
     const x=r.x*w,y=r.y*h,rw=r.w*w,rh=r.h*h;
     const contain=Math.min(rw/sw,rh/sh),cw=sw*contain,ch=sh*contain;
     const cover=Math.max(rw/sw,rh/sh),bw=sw*cover,bh=sh*cover;
-    ctx.save();ctx.beginPath();ctx.rect(x,y,rw,rh);ctx.clip();
+    ctx.save();shapePath(ctx,x,y,rw,rh,style.motif);ctx.clip();
     ctx.fillStyle='#ffffff';ctx.fillRect(x,y,rw,rh);
     // Background is filled without cropping the central photograph.
     ctx.globalAlpha=.45;ctx.drawImage(img,x+(rw-bw)/2,y+(rh-bh)/2,bw,bh);ctx.globalAlpha=1;
     ctx.drawImage(img,x+(rw-cw)/2,y+(rh-ch)/2,cw,ch);ctx.restore();
-  }
-  function petals(ctx,x,y,r,color){
-    ctx.fillStyle=color;
-    for(let i=0;i<5;i++){
-      const a=i*Math.PI*2/5;
-      ctx.beginPath();ctx.ellipse(x+Math.cos(a)*r*.62,y+Math.sin(a)*r*.62,r*.5,r*.36,a,0,Math.PI*2);ctx.fill();
-    }
-    ctx.beginPath();ctx.arc(x,y,r*.24,0,Math.PI*2);ctx.fill();
-  }
-  function decorate(ctx,w,h,style,rects){
-    const {ink,accent,decor}=style;
-    ctx.save();ctx.fillStyle=ink;ctx.strokeStyle=ink;ctx.textAlign='center';
-    if(decor==='ribbon'){
-      ctx.font=Math.round(w*.055)+'px Georgia';ctx.fillText('♡    ✿    ♡',w/2,h*.065);
-      ctx.font=Math.round(w*.08)+'px Georgia';ctx.fillText('୨୧',w*.88,h*.97);
-    }
-    if(decor==='sticker'){
-      const icons=['★','♡','✿','✦','☆','♥','✧','☻'];
-      ctx.font=Math.round(w*.045)+'px Georgia';
-      for(let i=0;i<18;i++){
-        const x=w*(.055+(i%2)*.89),y=h*(.08+(i/18)*.86);
-        ctx.fillStyle=i%2?ink:accent;
-        ctx.fillText(icons[i%icons.length],x,y);
-      }
-    }
-    if(decor==='sparkle'){
-      ctx.font=Math.round(w*.045)+'px Georgia';
-      for(let i=0;i<22;i++){
-        ctx.fillStyle=i%2?ink:accent;
-        const x=w*(.035+(i%2)*.93),y=h*(.08+i*.039);
-        ctx.fillText(i%2?'✧':'✦',x,y);
-      }
-    }
-    if(decor==='doodle'){
-      for(let i=0;i<16;i++){
-        petals(ctx,w*(.052+(i%2)*.89),h*(.08+i*.053),w*.015,i%3?accent:ink);
-      }
-    }
-    if(decor==='film'){
-      ctx.fillStyle=ink;
-      ctx.fillRect(w*.009,0,w*.032,h);ctx.fillRect(w*.959,0,w*.032,h);
-      ctx.fillStyle=style.bg;
-      for(let i=0;i<Math.ceil(h/(w*.09));i++){
-        const y=i*w*.09+w*.025;
-        ctx.fillRect(w*.018,y,w*.014,w*.045);ctx.fillRect(w*.968,y,w*.014,w*.045);
-      }
-    }
-    ctx.restore();
   }
   function render(canvas,opts){
     const {count,layout,rects,shots,frame,filter,filterEngine,selected=-1,preview=false,preFiltered=false}=opts;
@@ -137,33 +100,33 @@ window.BloomStudio = (() => {
     ctx.fillStyle=style.bg;ctx.fillRect(0,0,w,h);
     ctx.fillStyle=style.ink;ctx.textAlign='center';
     ctx.font='800 '+Math.max(8,Math.round(w*.049))+'px Arial';
-    ctx.fillText('BLOOM BOOTH',w/2,h*.058);
+    ctx.fillText(style.title||'BLOOM BOOTH',w/2,h*.058,w*.87);
     ctx.font=Math.max(5,Math.round(w*.019))+'px Arial';
-    ctx.fillText('COLLECT YOUR LITTLE MOMENTS',w/2,h*.077);
+    ctx.fillText(style.id==='plain'?'COLLECT YOUR LITTLE MOMENTS':'BLOOM BOOTH STUDIO',w/2,h*.077,w*.9);
     const actual=rects||cloneRects(count,layout);
     actual.forEach((r,i)=>{
       const x=r.x*w,y=r.y*h,rw=r.w*w,rh=r.h*h;
-      ctx.fillStyle=style.accent;ctx.fillRect(x-w*.006,y-w*.006,rw+w*.012,rh+w*.012);
+      ctx.fillStyle=style.accent;shapePath(ctx,x-w*.008,y-h*.003,rw+w*.016,rh+h*.006,style.motif);ctx.fill();
       if(shots[i]){
         let image=shots[i];
         if(!preFiltered&&filterEngine){
           const c=document.createElement('canvas');filterEngine.apply(c,image,filter);image=c;
         }
-        photo(ctx,image,r,w,h);
+        photo(ctx,image,r,w,h,style);
       }else{
-        ctx.fillStyle=style.bg;ctx.fillRect(x,y,rw,rh);
+        ctx.fillStyle=style.bg;shapePath(ctx,x,y,rw,rh,style.motif);ctx.fill();
         ctx.fillStyle=style.ink;ctx.globalAlpha=.45;
         ctx.font='700 '+Math.max(10,Math.round(w*.065))+'px Arial';
         ctx.fillText(String(i+1).padStart(2,'0'),x+rw/2,y+rh/2);
         ctx.globalAlpha=1;
       }
-      ctx.strokeStyle=style.ink;ctx.lineWidth=Math.max(1,w*.003);ctx.strokeRect(x,y,rw,rh);
+      ctx.strokeStyle=style.ink;ctx.lineWidth=Math.max(1,w*.003);shapePath(ctx,x,y,rw,rh,style.motif);ctx.stroke();
       if(preview&&selected===i){
         ctx.save();ctx.setLineDash([w*.015,w*.009]);ctx.lineWidth=Math.max(2,w*.008);
         ctx.strokeStyle='#e03f74';ctx.strokeRect(x-w*.009,y-w*.009,rw+w*.018,rh+w*.018);ctx.restore();
       }
     });
-    decorate(ctx,w,h,style,actual);
+    window.BloomFrameArt.draw(ctx,w,h,style);
     ctx.fillStyle=style.ink;ctx.textAlign='center';
     ctx.font='italic '+Math.max(7,Math.round(w*.026))+'px Georgia';
     ctx.fillText(count===1?'One lovely moment':count+' little moments in one',w/2,h*.959);

@@ -10,7 +10,7 @@ Location: E:\PhotoBooth\photobooth-ios\mobile
 - JPEG resolution: 1200x1600 (one), 1200x2700 (three), 1200x3500 (five).
 - Preserves source aspect ratio; background fills the remainder without distorting the centered photo.
 - Color filter thumbnails use snapshots from the camera.
-- 49 independently rendered frame variants: one plain plus 48 combinations of 8 palette groups and 6 decorative treatments.
+- 41 frame choices: 1 plain and 40 original independently drawn art designs; no palette cross-product. Each has its own illustration and ornament geometry.
 - Inspiration categories: Y2K Chrome, Coquette Pink, Kawaii Peach, Vintage Film, Noir Editorial, Lavender Dream, Sage Garden and Classic Cream.
 - No copyrighted logos, original third-party brand assets or mascots are bundled.
 - iPhone Safari camera live requires trusted HTTPS (LAN: https://192.168.2.62:8443/).
