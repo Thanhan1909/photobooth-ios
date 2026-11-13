@@ -41,6 +41,7 @@ window.BloomTemplateLibrary=(()=>{
       rects:template.rects.map(r=>({...r})),
       background:template.background||null,
       overlay:template.overlay||null,
+      photoReplace:Boolean(template.photoReplace),
       savedAt:Date.now()
     }));
     return id;

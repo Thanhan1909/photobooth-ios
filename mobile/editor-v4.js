@@ -15,7 +15,7 @@
   const state={
     sources:[],selected:[],count:3,template:catalog.templates[0],
     rects:catalog.slots(catalog.templates[0],3),frame:studio.frames[0],
-    filter:effects.presets[0],overlay:null,backgroundImage:null,drag:null,activeSlot:0,fit:'contain',
+    filter:effects.presets[0],overlay:null,backgroundImage:null,photoReplace:false,drag:null,activeSlot:0,fit:'cover',
     dirty:true,cameraStream:null,cameraFacing:'user',cameraBusy:false,cameraAnimation:0
   };
   const srcCards=get('editorSources'),chosenCards=get('editorChosen');
@@ -99,7 +99,14 @@
     refreshSources();
     paint();
     updateCameraControls();
-    showStatus('Đã chụp ô '+(target+1)+'. Tiếp theo: ô '+(state.activeSlot+1)+'.');
+    const finished=Array.from({length:state.count},(_,i)=>state.sources[state.selected[i]]?.img).every(Boolean);
+    showStatus(finished?'Đã chụp đủ '+state.count+' ô. Có thể lưu thành phẩm hoặc đổi khung.':'Đã chụp ô '+(target+1)+'. Tiếp theo: ô '+(state.activeSlot+1)+'.');
+    if(finished&&target===state.count-1){
+      stopCamera(); // Leave the completed composition visible, not the live feed in slot 1.
+      if(get('editorAutoSave')?.checked&&window.BloomNativePhotos?.isNative?.()){
+        void save();
+      }
+    }
   }
 
   function dimensions(){
@@ -145,10 +152,17 @@
     }
     state.rects.forEach((r,i)=>{
       const X=r.x*w,Y=r.y*h,W=r.w*w,H=r.h*h;
-      c.save();c.fillStyle='#fffdfa';c.shadowColor='#664c5535';
-      c.shadowBlur=w*.014;c.shadowOffsetY=w*.008;
-      catalog.slotShape(c,X-w*.004,Y-w*.004,W+w*.008,H+w*.008,state.template);c.fill();
-      c.restore();
+      c.save();
+      if(r.rotation){
+        const cx=X+W/2,cy=Y+H/2;
+        c.translate(cx,cy);c.rotate(r.rotation*Math.PI/180);c.translate(-cx,-cy);
+      }
+      if(!state.photoReplace){
+        c.save();c.fillStyle='#fffdfa';c.shadowColor='#664c5535';
+        c.shadowBlur=w*.014;c.shadowOffsetY=w*.008;
+        catalog.slotShape(c,X-w*.004,Y-w*.004,W+w*.008,H+w*.008,state.template);c.fill();
+        c.restore();
+      }
       const live=Boolean(!exportImage&&state.cameraStream&&cameraVideo.videoWidth&&state.activeSlot===i);
       let image=imageSources[i];
       if(live){
@@ -174,7 +188,9 @@
         image=cache.filtered;
         const sw=image.width,sh=image.height,contain=Math.min(W/sw,H/sh),cover=Math.max(W/sw,H/sh);
         const scale=state.fit==='cover'?cover:contain;
-        c.save();catalog.slotShape(c,X,Y,W,H,state.template);c.clip();
+        c.save();
+        if(state.photoReplace){c.beginPath();c.rect(X,Y,W,H);}else catalog.slotShape(c,X,Y,W,H,state.template);
+        c.clip();
         c.fillStyle='#fffdf9';c.fillRect(X,Y,W,H);
         if(state.fit!=='cover'){
           c.globalAlpha=.20;
@@ -183,7 +199,7 @@
         }
         c.drawImage(image,X+(W-sw*scale)/2,Y+(H-sh*scale)/2,sw*scale,sh*scale);
         c.restore();
-      }else{
+      }else if(!state.photoReplace){
         c.save();c.fillStyle='#fcf7f5';catalog.slotShape(c,X,Y,W,H,state.template);c.fill();
         c.fillStyle='#a18e97';c.textAlign='center';
         c.font='bold '+Math.max(12,Math.round(w*.05))+'px Arial';
@@ -191,12 +207,13 @@
         c.restore();
       }
       c.save();c.strokeStyle=state.template.accent;c.lineWidth=w*.003;
-      catalog.slotShape(c,X,Y,W,H,state.template);c.stroke();
+      if(!state.photoReplace){catalog.slotShape(c,X,Y,W,H,state.template);c.stroke();}
       if(!exportImage&&state.activeSlot===i){
         c.setLineDash([w*.009,w*.006]);c.strokeStyle='#c64775';c.lineWidth=w*.008;
         c.strokeRect(X-w*.006,Y-w*.006,W+w*.012,H+w*.012);
       }
       c.restore();
+      c.restore(); // rotation applied only within this individual photo window
     });
     // Original frame artwork has transparent holes matching fixed photo slots.
     // The very same compositor is used for preview and full-resolution export.
@@ -221,6 +238,7 @@
     saveButton.disabled=state.selected.length!==state.count||
       state.selected.some(i=>!state.sources[i]);
     const thumb=get('editorSizeSlider');thumb.disabled=state.rects.length===0;
+    get('editorRotation').value=String(state.rects[state.activeSlot]?.rotation||0);
     const slots=chosenCards.querySelectorAll('.editor-slot-card');
     slots.forEach((btn,i)=>btn.classList.toggle('active',i===state.activeSlot));
   }
@@ -255,6 +273,7 @@
     const t=catalog.templates.find(x=>x.id===id);
     if(!t)return;
     state.template=t;
+    if(state.photoReplace){state.photoReplace=false;state.backgroundImage=null;state.overlay=null;}
     if(t.fixedCount){
       state.count=t.fixedCount;
       state.selected=state.selected.slice(0,state.count);
@@ -402,6 +421,11 @@
       }
       for(const template of list.sort((a,b)=>b.savedAt-a.savedAt)){
         const row=document.createElement('div');row.className='personal-template-card';
+        if(template.background){
+          const thumb=document.createElement('img');thumb.className='personal-template-thumb';
+          thumb.src=template.background;thumb.alt=template.name;
+          row.append(thumb);
+        }
         const select=document.createElement('button');
         select.type='button';select.className='btn btn-outline';
         select.textContent=template.name+' · '+template.count+' ô';
@@ -428,7 +452,8 @@
         rects:state.rects.map(rect=>({...rect})),
         background:state.backgroundImage
           ?(state.backgroundImage.toDataURL?.('image/jpeg',.9)||state.backgroundImage.src):null,
-        overlay:imageURL(state.overlay)
+        overlay:imageURL(state.overlay),
+        photoReplace:state.photoReplace
       });
       await refreshPersonalTemplates();
       showStatus('Đã lưu mẫu '+name+' trong thư viện trên thiết bị. Mã: '+saved.slice(0,12));
@@ -446,7 +471,8 @@
       state.template=layout;state.count=template.count;
       state.selected=state.selected.slice(0,state.count);
       state.rects=template.rects.map(r=>({...r}));
-      state.backgroundImage=bg;state.overlay=overlay;state.activeSlot=0;
+      state.backgroundImage=bg;state.overlay=overlay;
+      state.photoReplace=Boolean(template.photoReplace);state.activeSlot=0;
       get('editorCount').value=String(state.count);
       get('editorTemplateName').value=template.name;
       refreshSources();drawGallery();paint();updateCameraControls();
@@ -474,6 +500,29 @@
     paint();
   });
   for(const type of ['pointerup','pointercancel'])canvas.addEventListener(type,()=>{pointer=null;});
+  async function importPersonalTask(task){
+    const button=get('editorLoadLocalPinterest');
+    button.disabled=true;
+    try{
+      const result=await task(message=>showStatus(message));
+      await refreshPersonalTemplates();
+      if(result.imported.length){
+        await loadPersonalTemplate('pinterest-personal-'+String(result.imported[0]).padStart(2,'0'));
+      }
+      showStatus('Đã nạp '+result.imported.length+'/14 mẫu Pinterest vào thư viện cá nhân. '+
+        (result.errors.length?result.errors.length+' ảnh lỗi.':'Chọn khung để chụp trực tiếp.'));
+    }catch(error){showStatus('Lỗi nạp mẫu: '+error.message);}
+    finally{button.disabled=false;}
+  }
+  get('editorLoadLocalPinterest').addEventListener('click',()=>{
+    const importer=window.BloomPersonalFrameImporter;
+    if(importer)void importPersonalTask(progress=>importer.installLocalPack(progress));
+  });
+  get('editorLoadPinterestFiles').addEventListener('change',e=>{
+    const selected=Array.from(e.target.files||[]);e.target.value='';
+    const importer=window.BloomPersonalFrameImporter;
+    if(importer&&selected.length)void importPersonalTask(progress=>importer.importFiles(selected,progress));
+  });
   get('editorTemplateSave').addEventListener('click',()=>{void savePersonalTemplate();});
   get('editorCameraStart').addEventListener('click',()=>{void openEditorCamera();});
   get('editorCameraCapture').addEventListener('click',captureIntoSelectedSlot);
@@ -516,6 +565,10 @@
     paint();
   });
   get('editorFit').addEventListener('change',e=>{state.fit=e.target.value;paint();});
+  get('editorRotation').addEventListener('input',e=>{
+    const r=state.rects[state.activeSlot];if(!r)return;
+    r.rotation=Number(e.target.value);paint();
+  });
   get('editorSizeSlider').addEventListener('input',e=>{
     const r=state.rects[state.activeSlot];if(!r)return;
     const factor=Number(e.target.value)/100;

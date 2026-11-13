@@ -70,3 +70,6 @@ deploy/*.sha
 /ios-app/www/
 /ios-app/ios/
 /ios-app/build/
+
+# Personal Pinterest reference artwork: never distribute in public GitHub or IPA
+/mobile/private-frames/

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fff8f2"><title>BloomBooth — Photo Studio</title>
-<link rel="stylesheet" href="/mobile/lite.css?v=16">
+<link rel="stylesheet" href="/mobile/lite.css?v=17">
 </head>
 <body>
 <header class="header"><div class="brand"><span class="flower">✿</span><span>BLOOM<span class="accent">BOOTH</span><small>YOUR PHOTO STUDIO</small></span></div><span class="head-note">Chụp ảnh, chọn khung, lưu khoảnh khắc ♡</span></header>
@@ -80,9 +80,11 @@
    </div>
    <video id="editorCameraVideo" autoplay muted playsinline aria-hidden="true" hidden></video>
    <canvas id="editCanvas" width="420" height="900" aria-label="Bản xem trước bố cục khung và ảnh"></canvas>
+   <label class="editor-auto-save"><input id="editorAutoSave" type="checkbox" checked> Tự lưu ảnh ghép khi chụp đủ ô (bản IPA)</label>
    <div class="editor-workspace-tools">
     <label>Kiểu lấp ảnh <select id="editorFit"><option value="contain">Giữ toàn ảnh (không cắt)</option><option value="cover">Lấp đầy khung (cắt viền)</option></select></label>
     <label>Kích thước ô đang chọn <input id="editorSizeSlider" type="range" min="50" max="160" value="100" step="5"></label>
+    <label>Góc nghiêng ô ảnh <input id="editorRotation" type="range" min="-30" max="30" value="0" step="1"></label>
     <button type="button" id="editorResetLayout" class="btn btn-outline">Đặt lại vị trí ô</button>
    </div>
    <button type="button" class="btn btn-download" id="editorSave">Lưu ảnh đã chỉnh vào Photos</button>
@@ -103,6 +105,12 @@
    <div class="editor-slot-heading"><b>Chọn bố cục độc lập</b><span>46 bố cục · 14 mẫu mới</span></div>
    <p class="help-text"><a href="./frame-gallery.html" target="_blank" rel="noopener noreferrer">Xem toàn bộ 14 khung mới trước khi chụp</a></p>
    <div id="editorTemplates" class="editor-templates" aria-label="Thư viện bố cục ảnh độc lập"></div>
+   <div class="editor-slot-heading"><b>Khung Pinterest cá nhân — chụp trực tiếp</b><span>14 mẫu của bạn</span></div>
+   <div class="editor-import-actions">
+     <button type="button" id="editorLoadLocalPinterest" class="btn btn-coral">Nạp 14 mẫu từ ổ E (trên mạng LAN)</button>
+     <label class="btn btn-outline editor-file-button">Nạp mẫu từ iPhone <input id="editorLoadPinterestFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label>
+   </div>
+   <p class="help-text">Các JPG gốc được lưu riêng trên thiết bị trong Thư viện khung cá nhân. Bạn chụp thẳng vào từng ô, không cần vẽ lại khung. Trên iPhone dùng link độc lập, hãy chọn 14 ảnh ref_01.jpg…ref_14.jpg từ ứng dụng Files một lần.</p>
    <div class="editor-slot-heading"><b>Thư viện khung cá nhân trên iPhone</b></div>
    <div class="editor-import-actions"><input id="editorTemplateName" class="editor-template-name" type="text" maxlength="90" placeholder="Tên mẫu của bạn" value="Khung cá nhân"><button id="editorTemplateSave" type="button" class="btn btn-coral">Lưu mẫu hiện tại</button></div>
    <div id="editorPersonalTemplates" class="editor-personal-templates" aria-label="Những mẫu bạn đã lưu riêng trên iPhone"></div>
@@ -131,5 +139,7 @@
 <script src="/mobile/selection-engine.js?v=11" defer></script>
 <script src="/mobile/lite.js?v=12" defer></script>
 <script src="/mobile/template-library.js?v=15" defer></script>
-<script src="/mobile/editor-v4.js?v=16" defer></script>
+<script src="/mobile/personal-frame-defs.js?v=17" defer></script>
+<script src="/mobile/personal-frame-import.js?v=17" defer></script>
+<script src="/mobile/editor-v4.js?v=17" defer></script>
 </body></html>
