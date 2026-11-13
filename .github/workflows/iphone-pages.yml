@@ -1,0 +1,56 @@
+name: BloomBooth iPhone PWA (GitHub Pages)
+on:
+  push:
+    branches: [main]
+    paths:
+      - mobile/**
+      - scripts/build-iphone-pwa.cjs
+      - scripts/generate-pwa-icons.py
+      - tests/iphone-pwa.test.cjs
+      - .github/workflows/iphone-pages.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: bloombooth-iphone-pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate mobile source and PWA
+        run: |
+          node --check mobile/lite.js
+          node --check mobile/frame-art.js
+          node --check mobile/studio-engine.js
+          node tests/mobile-filter-engine.test.cjs
+          node tests/mobile-studio-v2.test.cjs
+          node tests/frame-layout-regression.test.cjs
+      - name: Create standalone iPhone app with icons and offline cache
+        run: node scripts/build-iphone-pwa.cjs
+      - name: Validate Pages build and no private files
+        run: node tests/iphone-pwa.test.cjs
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+      - name: Upload static app artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/iphone
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.publish.outputs.page_url }}
+    steps:
+      - name: Publish BloomBooth iPhone app
+        id: publish
+        uses: actions/deploy-pages@v4

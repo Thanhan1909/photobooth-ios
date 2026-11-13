@@ -61,3 +61,6 @@ scripts/rembg_venv/
 # Local Windows CI/CD logs
 deploy/*.log
 deploy/*.sha
+
+# Generated iPhone PWA distribution (built by GitHub Actions)
+/dist/
