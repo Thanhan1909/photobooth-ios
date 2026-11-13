@@ -158,3 +158,40 @@ canvas.frame-preview{background:#faf0eb}
 .personal-template-card{display:flex;gap:8px;align-items:center;justify-content:space-between;border:1px solid #f0dce3;background:#fff8f9;border-radius:10px;padding:6px}
 .personal-template-card button:first-child{flex:1;text-align:left}
 .personal-template-card button{font-size:11px}
+
+/* Saved ZIP frames are FIRST in the main frame selection, not hidden in editor. */
+.personal-frames-main{margin:10px 0 22px;padding:16px;border:1px solid #ecd0d7;border-radius:17px;background:#fff9fa}
+.personal-frames-head{display:flex;justify-content:space-between;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:12px}
+.personal-frames-head strong{font-size:17px;color:#8e4a69}
+#savedFrameCount{display:inline-grid;place-items:center;background:#f5dce6;min-width:27px;height:27px;border-radius:50%;font-weight:750}
+.personal-frames-head p{margin:4px 0 0;color:#9e7e8b;font-size:12px}
+.saved-frame-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.saved-frame-card{min-width:0;padding:8px;border:1px solid #eddae1;border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:7px}
+.saved-frame-card.selected{border:2px solid #d66493}
+.saved-frame-image{height:145px;width:100%;object-fit:contain;background:#f6edf1;border-radius:8px}
+.saved-frame-description{display:flex;flex-direction:column;gap:3px;min-height:36px}
+.saved-frame-description strong{font-size:11px;line-height:1.3}
+.saved-frame-description small{color:#ad8b98;font-size:10px}
+.saved-frame-actions{display:flex;gap:5px;flex-wrap:wrap}
+.saved-frame-actions button{border-radius:8px;cursor:pointer;font:700 11px/1.25 inherit;padding:8px 9px;min-height:35px}
+.saved-frame-use{flex:1;background:#d97c9a;border:1px solid #d97c9a;color:white}
+.saved-frame-delete{background:white;border:1px solid #e9cdd4;color:#996a78}
+.saved-frame-empty{grid-column:1/-1;color:#997a85;font-size:12px;padding:14px;border:1px dashed #debcc9;border-radius:12px}
+.zip-frame-review[hidden]{display:none}
+.zip-frame-review{margin:14px 0;padding:12px;border:1px solid #e8d1dd;background:#fff;border-radius:12px}
+.zip-review-title{display:flex;gap:10px;align-items:center;justify-content:space-between}
+.zip-review-title strong{color:#814e67}.zip-review-title small{color:#a17f8e}
+.zip-review-actions{display:flex;gap:7px;margin:10px 0}
+.zip-review-actions button{padding:7px 9px;background:#fff9fb;border:1px solid #e8d0d9;border-radius:8px;cursor:pointer}
+.zip-frame-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;max-height:560px;overflow:auto}
+.zip-choice{cursor:pointer;border:2px solid #ead6de;border-radius:10px;padding:7px;display:flex;flex-direction:column;gap:6px;background:#fff;min-width:0}
+.zip-choice.checked{border-color:#c95080;background:#fff0f6}
+.zip-choice input{align-self:flex-end;width:19px;height:19px;accent-color:#c95080}
+.zip-choice img{width:100%;height:130px;object-fit:contain;background:#f6eef1}
+.zip-choice span{font-size:11px;line-height:1.35;color:#7d5464}
+#zipSaveChosen{margin-top:12px;width:100%;min-height:45px}
+.personal-frame-status{color:#8b5169;font-size:12px;margin:12px 0 0}
+.personal-template-thumb{width:51px;height:64px;object-fit:cover;border-radius:6px}
+@media(max-width:850px){.saved-frame-grid,.zip-frame-choices{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){.saved-frame-grid,.zip-frame-choices{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.saved-frame-image{height:132px}.zip-choice img{height:120px}.personal-frames-main{padding:10px}}

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fff8f2"><title>BloomBooth — Photo Studio</title>
-<link rel="stylesheet" href="/mobile/lite.css?v=17">
+<link rel="stylesheet" href="/mobile/lite.css?v=19">
 </head>
 <body>
 <header class="header"><div class="brand"><span class="flower">✿</span><span>BLOOM<span class="accent">BOOTH</span><small>YOUR PHOTO STUDIO</small></span></div><span class="head-note">Chụp ảnh, chọn khung, lưu khoảnh khắc ♡</span></header>
@@ -57,6 +57,28 @@
   <section id="filterPanel" role="tabpanel"><div class="chips" id="categories"><button class="chip active" data-category="all">Tất cả</button><button class="chip" data-category="portrait">Chân dung</button><button class="chip" data-category="film">Film & Retro</button><button class="chip" data-category="creative">Sáng tạo</button></div><div id="filters" class="filters" aria-label="Chọn filter"></div></section>
   <section id="framePanel" role="tabpanel" hidden>
     <div class="chips" id="frameCategories"><button class="chip active" data-frame-category="all">Tất cả</button><button class="chip" data-frame-category="trend">Hot trend</button><button class="chip" data-frame-category="cute">Dễ thương</button><button class="chip" data-frame-category="retro">Retro</button><button class="chip" data-frame-category="classic">Tối giản</button></div>
+    <section id="personalFramesMain" class="personal-frames-main" aria-label="Khung đã lưu trên thiết bị">
+      <div class="personal-frames-head">
+        <div><strong>Khung của tôi</strong> <span id="savedFrameCount">0</span>
+          <p>Khung lưu từ ZIP sẽ hiện ngay đây. Chọn khung để chụp trực tiếp.</p></div>
+        <label class="btn btn-primary editor-file-button">Nhập ZIP khung
+          <input id="personalZipFile" type="file" accept=".zip,application/zip,application/x-zip-compressed" hidden>
+        </label>
+      </div>
+      <div id="savedFrameGrid" class="saved-frame-grid"></div>
+      <div id="zipFrameReview" class="zip-frame-review" hidden>
+        <div class="zip-review-title"><strong>Chọn các khung muốn lưu</strong>
+          <small id="zipSelectedCount">0 khung được chọn</small></div>
+        <div class="zip-review-actions">
+          <button type="button" id="zipSelectAll">Chọn tất cả</button>
+          <button type="button" id="zipSelectNone">Bỏ chọn</button>
+          <button type="button" id="zipCancel">Đóng</button>
+        </div>
+        <div id="zipFrameChoices" class="zip-frame-choices"></div>
+        <button type="button" id="zipSaveChosen" class="btn btn-primary" disabled>Lưu khung đã chọn</button>
+      </div>
+      <p id="personalFrameStatus" class="personal-frame-status" role="status" hidden></p>
+    </section>
     <div id="activeFramePreview" class="active-frame-preview" aria-live="polite"><canvas id="activeFrameCanvas" width="180" height="240" aria-label="Ảnh xem trước với khung đang chọn"></canvas><div class="active-frame-copy"><strong id="activeFrameName">Khung nguyên bản</strong><small>Khung đổi ngay trên ảnh đã chụp và bản Download.</small></div></div>
     <p class="frame-intro">41 mẫu gồm 40 thiết kế khung độc lập lấy cảm hứng từ các chủ đề photobooth, không chỉ đổi màu. Thumbnail phản ánh đúng khung sẽ xuất.</p>
     <div id="frames" class="filters" aria-label="41 mẫu khung ảnh"></div>
@@ -143,5 +165,6 @@
 <script src="/mobile/personal-frame-defs.js?v=17" defer></script>
 <script src="/mobile/vendor/fflate.min.js?v=18" defer></script>
 <script src="/mobile/personal-frame-import.js?v=18" defer></script>
-<script src="/mobile/editor-v4.js?v=18" defer></script>
+<script src="/mobile/editor-v4.js?v=19" defer></script>
+<script src="/mobile/personal-frame-ui.js?v=19" defer></script>
 </body></html>

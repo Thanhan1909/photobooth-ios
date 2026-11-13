@@ -47,6 +47,7 @@ jobs:
           node tests/curated-frames.test.cjs
           node tests/personal-frame-defs.test.cjs
           node tests/zip-import.test.cjs
+          node tests/saved-frame-ui.test.cjs
       - name: Install pinned iOS dependencies
         run: npm ci --prefix ios-app --no-audit --no-fund
       - name: Build embedded offline web assets

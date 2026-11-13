@@ -434,7 +434,10 @@
         del.type='button';del.className='btn btn-outline';del.textContent='Xóa';
         del.addEventListener('click',()=>{
           if(!window.confirm('Xóa mẫu '+template.name+' khỏi iPhone?'))return;
-          void localLibrary.remove(template.id).then(refreshPersonalTemplates);
+          void localLibrary.remove(template.id).then(async()=>{
+            await refreshPersonalTemplates();
+            window.dispatchEvent(new Event('bloom:personal-frames-changed'));
+          });
         });
         row.append(select,del);box.append(row);
       }
@@ -456,6 +459,7 @@
         photoReplace:state.photoReplace
       });
       await refreshPersonalTemplates();
+      window.dispatchEvent(new Event('bloom:personal-frames-changed'));
       showStatus('Đã lưu mẫu '+name+' trong thư viện trên thiết bị. Mã: '+saved.slice(0,12));
     }catch(error){showStatus('Không lưu được mẫu: '+error.message);}
   }
@@ -602,7 +606,14 @@
     else showStatus('Đã đưa '+captured.length+' ảnh đã chụp vào trình chỉnh sửa.');
   });
   // Makes any photo count accessible; capture itself is controlled by the camera screen.
-  window.BloomEditor=Object.freeze({addSource,importFiles,setCount,save,chooseTemplate});
+  window.BloomEditor=Object.freeze({
+    addSource,importFiles,setCount,save,chooseTemplate,refreshPersonalTemplates,
+    async openPersonalTemplate(id){
+      get('editorWorkspace').hidden=false;
+      await loadPersonalTemplate(id);
+      get('editorWorkspace').scrollIntoView({behavior:'smooth',block:'start'});
+    }
+  });
   refreshSources();drawGallery();paint();updateCameraControls();
   window.addEventListener('bloom:frame-ready',()=>{
     drawGallery();paint();

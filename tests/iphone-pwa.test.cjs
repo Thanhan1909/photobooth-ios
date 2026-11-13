@@ -7,7 +7,7 @@ const html=fs.readFileSync(path.join(output,'index.html'),'utf8');
 const manifest=JSON.parse(fs.readFileSync(path.join(output,'manifest.webmanifest'),'utf8'));
 const serviceWorker=fs.readFileSync(path.join(output,'sw.js'),'utf8');
 for(const src of [
- 'filter-engine.js','studio-engine.js','frame-art.js','selection-engine.js','layout-catalog.js','curated-frames.js','template-library.js','personal-frame-defs.js','personal-frame-import.js','editor-v4.js','lite.js','lite.css',
+ 'filter-engine.js','studio-engine.js','frame-art.js','selection-engine.js','layout-catalog.js','curated-frames.js','template-library.js','personal-frame-defs.js','personal-frame-import.js','personal-frame-ui.js','editor-v4.js','lite.js','lite.css',
  'vendor/fflate.min.js','pwa.js','sw.js','manifest.webmanifest',
  'icons/icon-180.png','icons/icon-192.png','icons/icon-512.png'
 ]){

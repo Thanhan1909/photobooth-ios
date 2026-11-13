@@ -63,7 +63,7 @@ window.BloomPersonalFrameImporter=(()=>{
     }
     return summary;
   }
-  async function importZip(file,onProgress=()=>{}){
+  async function readZip(file){
     if(!file || !(/\.zip$/i.test(file.name)||file.type==='application/zip'))
       throw Error('Hãy chọn file ZIP chứa ảnh ref_01.jpg đến ref_14.jpg');
     if(file.size>25*1024*1024)throw Error('File ZIP vượt giới hạn 25 MB');
@@ -99,7 +99,11 @@ window.BloomPersonalFrameImporter=(()=>{
       }));
     }
     if(!files.length)throw Error('ZIP không có ảnh ref_01.jpg ... ref_14.jpg');
-    onProgress('Đã đọc ZIP: '+files.length+' mẫu, đang lưu vào thư viện cá nhân');
+    return files;
+  }
+  async function importZip(file,onProgress=()=>{}){
+    const files=await readZip(file);
+    onProgress("Đã đọc "+files.length+" ảnh, đang lưu vào thiết bị");
     return importFiles(files,onProgress);
   }
   async function installLocalPack(onProgress=()=>{}){
@@ -121,5 +125,5 @@ window.BloomPersonalFrameImporter=(()=>{
     }
     return result;
   }
-  return Object.freeze({importFiles,importZip,installLocalPack,getIndex});
+  return Object.freeze({importFiles,readZip,importZip,installLocalPack,getIndex});
 })();
