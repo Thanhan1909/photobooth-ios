@@ -21,6 +21,13 @@
     <button type="button" id="retake" class="btn btn-outline" hidden>↻ Chụp lại ô cuối</button>
     <button type="button" id="resetStrip" class="btn btn-outline" hidden>↺ Chụp bộ mới</button>
   </div>
+  <div id="photoSelectionPanel" class="photo-selection-panel" hidden>
+    <h3>Chọn 3 tấm từ 5 ảnh vừa chụp</h3>
+    <p id="photoSelectionHint">Chọn đúng 3 ảnh, theo thứ tự muốn ghép vào frame.</p>
+    <div id="photoCandidates" class="photo-candidates" aria-label="Ảnh ứng viên đã chụp"></div>
+    <button type="button" id="confirmPhotos" class="btn btn-coral" disabled>Xác nhận 3 ảnh và tự lưu vào Ảnh</button>
+    <button type="button" id="editPhotos" class="btn btn-outline" hidden>Chọn lại ảnh</button>
+  </div>
   <p class="status" id="status" role="status">Sẵn sàng. Chọn chế độ rồi mở camera.</p>
   <div class="slot-editor">
     <div class="slot-header"><b>Ảnh đã chụp & thứ tự</b><small>Chạm 2 ảnh để hoán đổi vị trí hoặc kéo thả</small></div>
@@ -34,6 +41,7 @@
     <div class="mode-options" id="modeOptions">
       <button type="button" data-count="1" class="mode-option">1 ảnh <small>Ảnh đơn</small></button>
       <button type="button" data-count="3" class="mode-option active">3 ảnh <small>Photo strip</small></button>
+      <button type="button" data-count="3" data-shots="5" class="mode-option">5 chụp → 3 chọn <small>Chọn 3 tấm đẹp nhất</small></button>
       <button type="button" data-count="5" class="mode-option">5 ảnh <small>Collage</small></button>
     </div>
     <div class="control-label layout-title">02 — Bố cục các ô ảnh</div>
@@ -56,5 +64,6 @@
 <script src="/mobile/filter-engine.js?v=8" defer></script>
 <script src="/mobile/frame-art.js?v=10" defer></script>
 <script src="/mobile/studio-engine.js?v=10" defer></script>
-<script src="/mobile/lite.js?v=10" defer></script>
+<script src="/mobile/selection-engine.js?v=11" defer></script>
+<script src="/mobile/lite.js?v=11" defer></script>
 </body></html>

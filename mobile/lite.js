@@ -4,19 +4,20 @@
   const video=$('camera'), preview=$('snapshot'), viewport=$('viewport');
   const status=$('status'), counter=$('shotCounter'), start=$('start'), flip=$('flip');
   const shoot=$('shoot'), retake=$('retake'), reset=$('resetStrip'), download=$('download');
-  const security=$('security'), filters=window.PhotoboothFilters,studio=window.BloomStudio;
-  if(!filters||!studio){status.textContent='Thieu thu vien xu ly anh';return;}
+  const security=$('security'), filters=window.PhotoboothFilters,studio=window.BloomStudio, selection=window.BloomSelection;
+  if(!filters||!studio||!selection){status.textContent='Thiếu thư viện xử lý ảnh';return;}
   const state={count:3,layout:'vertical',rects:studio.cloneRects(3,'vertical'),
     shots:[null,null,null],active:0,selected:0,swapFrom:-1,manual:false,
     frame:studio.frames[0],filter:filters.presets[0],category:'all',frameCategory:'all',
-    facing:'user',stream:null,busy:false,thumbTimer:null,previewImage:null,framePreviewTimer:null};
+    facing:'user',stream:null,busy:false,thumbTimer:null,previewImage:null,framePreviewTimer:null,
+    captureTotal:3,pickMode:false,pool:[],picked:[],selectionFinal:false,saving:false};
   const secure=window.isSecureContext&&!!navigator.mediaDevices?.getUserMedia;
   const setStatus=s=>{status.textContent=s;};
-  const hasShot=()=>state.shots.some(Boolean);
+  const hasShot=()=>state.shots.some(Boolean)||state.pool.length>0;
   function photoSample(){
     const c=document.createElement('canvas');c.width=140;c.height=190;
     const x=c.getContext('2d');
-    const previous=state.shots.find(Boolean);
+    const previous=state.shots.find(Boolean)||state.pool[state.pool.length-1];
     if(state.stream&&video.videoWidth){
       const w=video.videoWidth,h=video.videoHeight,scale=Math.max(c.width/w,c.height/h);
       x.save();if(state.facing==='user'){x.translate(c.width,0);x.scale(-1,1);}
@@ -76,15 +77,20 @@
   }
   function render(){
     renderCanvas();
-    const complete=state.active>=state.count;
-    counter.textContent=state.active+' / '+state.count;
-    shoot.textContent=complete?'✓ Đã chụp đủ':'● Chụp ô '+(state.active+1)+'/'+state.count;
-    shoot.disabled=complete||!state.stream;
-    retake.hidden=state.active===0;reset.hidden=state.active===0;
+    const complete=state.active>=state.count && (!state.pickMode||state.selectionFinal);
+    const photoProgress=state.pickMode&&!state.selectionFinal ? state.pool.length : state.active;
+    const goal=state.pickMode&&!state.selectionFinal ? state.captureTotal : state.count;
+    counter.textContent=photoProgress+' / '+goal;
+    shoot.textContent=complete?'✓ Đã chụp đủ':photoProgress>=goal?'Chọn ảnh bên dưới':'● Chụp '+(photoProgress+1)+'/'+goal;
+    shoot.disabled=complete||photoProgress>=goal||!state.stream;
+    retake.hidden=state.pickMode?(!state.pool.length||state.selectionFinal):state.active===0;
+    reset.hidden=state.pickMode?!state.pool.length:state.active===0;
     download.disabled=!complete;
+    renderCandidates();
     $('downloadDescription').textContent=complete
-      ?'Đã đủ '+state.count+' ảnh. Bạn có thể chỉnh bố cục và tải JPEG.'
-      :'Chụp đủ '+state.count+' ảnh để tải JPEG. Ảnh không được upload.';
+      ?(window.BloomNativePhotos?.isNative?.()?'Đã hoàn tất. Ảnh được lưu tự động vào Photos.':'Đã hoàn tất. Dùng Chia sẻ để lưu vào Ảnh.')
+      :state.pickMode?'Chụp đủ 5 tấm, rồi chọn 3 tấm muốn ghép vào khung.':'Hoàn tất bộ ảnh để lưu thẳng vào Photos trên iPhone.';
+    download.textContent=window.BloomNativePhotos?.isNative?.()?'Lưu lại vào Ảnh':'Chia sẻ / Lưu vào Ảnh';
     positionLive();renderShotCards();
   }
   function renderShotCards(){
@@ -133,14 +139,16 @@
     $('slotSize').value=String(Math.max(60,Math.min(140,value)));
     $('slotSizeValue').textContent=$('slotSize').value+'%';
   }
-  function changeMode(count){
-    if(count===state.count)return;
+  function changeMode(count,captureTotal=count){
+    if(count===state.count && captureTotal===state.captureTotal)return;
     if(hasShot()&&!window.confirm('Đổi chế độ sẽ xóa các ảnh đang chụp. Tiếp tục?'))return;
+    state.count=count;state.captureTotal=captureTotal;state.pickMode=captureTotal>count;
+    state.pool=[];state.picked=[];state.selectionFinal=false;
     state.count=count;state.layout='vertical';state.rects=studio.cloneRects(count,'vertical');
     state.shots=Array.from({length:count},()=>null);state.active=0;state.selected=0;state.swapFrom=-1;
     state.manual=false;$('manualPosition').checked=false;$('sizeControl').hidden=true;
     viewport.classList.remove('drag-enabled');
-    document.querySelectorAll('.mode-option').forEach(b=>b.classList.toggle('active',Number(b.dataset.count)===count));
+    document.querySelectorAll('.mode-option').forEach(b=>b.classList.toggle('active',Number(b.dataset.count)===count&&Number(b.dataset.shots||b.dataset.count)===captureTotal));
     resizeCanvas();showLayouts();showFrames();render();refreshPreviews(true);
   }
   function showLayouts(){
@@ -246,46 +254,130 @@
     }finally{state.busy=false;start.disabled=false;}
   }
   function capture(){
-    if(!state.stream||!video.videoWidth||state.active>=state.count)return;
+    if(!state.stream||!video.videoWidth)return;
+    if(state.pickMode ? state.pool.length>=state.captureTotal : state.active>=state.count)return;
     const scale=Math.min(1,1600/Math.max(video.videoWidth,video.videoHeight));
     const raw=document.createElement('canvas');
     raw.width=Math.round(video.videoWidth*scale);raw.height=Math.round(video.videoHeight*scale);
     const ctx=raw.getContext('2d');
     if(state.facing==='user'){ctx.translate(raw.width,0);ctx.scale(-1,1);}
     ctx.drawImage(video,0,0,raw.width,raw.height);
+    if(state.pickMode){
+      state.pool.push(raw);
+      if(state.pool.length===state.captureTotal){stopStream();flip.disabled=true;}
+      render();refreshPreviews(true);
+      setStatus(state.pool.length===state.captureTotal?'Đã có 5 ảnh. Chọn đúng 3 tấm để ghép.':'Đã chụp '+state.pool.length+'/'+state.captureTotal+' ảnh.');
+      return;
+    }
     state.shots[state.active]=raw;state.active++;
     if(state.active===state.count){stopStream();flip.disabled=true;}
     state.selected=Math.min(state.active,state.count-1);
     state.swapFrom=-1;render();refreshPreviews(true);
-    setStatus(state.active===state.count?'Đã đủ ảnh. Sắp xếp lại và tải về.':'Đã chụp '+state.active+'/'+state.count+'. Tiếp tục chụp ô '+(state.active+1)+'.');
+    if(state.active===state.count){void saveToPhotos(true);}else setStatus('Đã chụp '+state.active+'/'+state.count+' ảnh.');
   }
   function retakeLast(){
+    if(state.pickMode&&state.selectionFinal){
+      state.selectionFinal=false;state.active=0;state.shots=Array.from({length:state.count},()=>null);
+      render();setStatus('Chọn lại 3 ảnh trong 5 tấm đã chụp.');return;
+    }
+    if(state.pickMode&&!state.selectionFinal){
+      if(!state.pool.length)return;
+      state.pool.pop();state.picked=[];render();refreshPreviews(true);
+      if(!state.stream)void openCamera();return;
+    }
     if(!state.active)return;
     state.active--;state.shots[state.active]=null;state.selected=state.active;
     state.swapFrom=-1;render();refreshPreviews(true);
     if(!state.stream)openCamera();
   }
   function restart(){
+    state.pool=[];state.picked=[];state.selectionFinal=false;
     state.shots=Array.from({length:state.count},()=>null);
     state.active=0;state.selected=0;state.swapFrom=-1;render();refreshPreviews(true);
     if(!state.stream)openCamera();
   }
-  async function exportPhoto(){
-    if(state.active!==state.count)return;
-    download.disabled=true;
+  function renderCandidates(){
+    const panel=$('photoSelectionPanel'),grid=$('photoCandidates');
+    if(!panel||!grid)return;
+    const ready=state.pickMode&&state.pool.length===state.captureTotal;
+    panel.hidden=!ready;
+    if(!ready){grid.replaceChildren();return;}
+    grid.replaceChildren();
+    state.pool.forEach((source,index)=>{
+      const button=document.createElement('button');button.type='button';
+      button.className='photo-candidate'+(state.picked.includes(index)?' picked':'');
+      button.dataset.index=String(index);
+      button.dataset.order=state.picked.includes(index)?String(state.picked.indexOf(index)+1):'';
+      button.setAttribute('aria-pressed',String(state.picked.includes(index)));
+      const img=document.createElement('img');img.alt='Tấm ảnh đã chụp '+(index+1);
+      img.src=source.toDataURL('image/jpeg',.62);
+      const label=document.createElement('span');label.textContent='Tấm '+(index+1);
+      button.append(img,label);
+      button.addEventListener('click',()=>{
+        state.picked=selection.choose(state.picked,index,state.count,state.pool.length);
+        state.selectionFinal=false;
+        state.shots=Array.from({length:state.count},()=>null);
+        state.active=0;
+        render();
+        $('photoSelectionHint').textContent='Đã chọn '+state.picked.length+'/'+state.count+' — thứ tự chọn là thứ tự ghép ảnh.';
+      });
+      grid.appendChild(button);
+    });
+    $('confirmPhotos').disabled=state.picked.length!==state.count;
+    $('confirmPhotos').hidden=state.selectionFinal;
+    $('editPhotos').hidden=!state.selectionFinal;
+    if(state.selectionFinal){
+      $('photoSelectionHint').textContent='Đã chọn xong 3 ảnh. Bạn có thể đổi khung và lưu lại.';
+    }
+  }
+  function confirmSelected(){
+    if(state.pool.length!==state.captureTotal)return;
     try{
-      const dim=studio.dimensions(state.count);
-      const output=document.createElement('canvas');output.width=dim.w;output.height=dim.h;
-      studio.render(output,{count:state.count,layout:state.layout,rects:state.rects,
-        shots:renderedShots(),frame:state.frame.id,preFiltered:true,preview:false});
-      const blob=await new Promise((resolve,reject)=>output.toBlob(
-        b=>b?resolve(b):reject(Error('Không thể xuất ảnh JPEG')),'image/jpeg',.94));
-      const url=URL.createObjectURL(blob),a=document.createElement('a');
-      a.href=url;a.download='bloombooth-'+state.count+'-photo-'+Date.now()+'.jpg';
-      document.body.appendChild(a);a.click();a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),60000);
-      setStatus('Đã tạo JPEG '+dim.w+' × '+dim.h+' px. Safari: Chia sẻ → Lưu vào Ảnh.');
-    }catch(e){setStatus('Lỗi Download: '+e.message);}finally{download.disabled=false;}
+      state.shots=selection.arrange(state.pool,state.picked,state.count);
+      state.active=state.count;state.selectionFinal=true;
+      render();refreshPreviews(true);
+      void saveToPhotos(true);
+    }catch(error){setStatus('Lỗi chọn ảnh: '+error.message);}
+  }
+  function outputCanvas(){
+    const dim=studio.dimensions(state.count);
+    const canvas=document.createElement('canvas');canvas.width=dim.w;canvas.height=dim.h;
+    studio.render(canvas,{count:state.count,layout:state.layout,rects:state.rects,
+      shots:renderedShots(),frame:state.frame.id,preFiltered:true,preview:false});
+    return canvas;
+  }
+  async function saveToPhotos(automatic=false){
+    if(state.active!==state.count||state.saving)return;
+    // An ordinary web page cannot silently write to iOS Photos.
+    if(automatic&&!window.BloomNativePhotos?.isNative?.()){
+      setStatus('Bộ ảnh đã hoàn thành. Mở ứng dụng iOS từ Sideloadly để tự lưu vào Photos; bản web dùng nút Chia sẻ.');
+      return;
+    }
+    state.saving=true;download.disabled=true;
+    try{
+      const canvas=outputCanvas();
+      const dataUrl=canvas.toDataURL('image/jpeg',.94);
+      if(window.BloomNativePhotos?.isNative?.()){
+        await window.BloomNativePhotos.savePhoto(dataUrl);
+        setStatus('Đã lưu thành công '+state.count+' ảnh ghép vào thư viện Ảnh (Photos) của iPhone.');
+      }else if(!automatic){
+        const blob=await new Promise((resolve,reject)=>canvas.toBlob(
+          data=>data?resolve(data):reject(Error('Không tạo được ảnh')),'image/jpeg',.94));
+        const file=new File([blob],'bloombooth-'+state.count+'-photo.jpg',{type:'image/jpeg'});
+        if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
+          await navigator.share({files:[file],title:'BloomBooth'});
+          setStatus('Chọn Lưu hình ảnh trong bảng Chia sẻ của iPhone.');
+        }else{
+          const url=URL.createObjectURL(blob),a=document.createElement('a');
+          a.href=url;a.download=file.name;document.body.append(a);a.click();a.remove();
+          setTimeout(()=>URL.revokeObjectURL(url),30000);
+          setStatus('Trình duyệt này chỉ hỗ trợ tải file. Ứng dụng iOS native hỗ trợ tự lưu Photos.');
+        }
+      }
+    }catch(error){
+      if(error?.name==='AbortError'){setStatus('Đã đóng bảng Chia sẻ.');}
+      else setStatus('Lỗi lưu ảnh: '+(error?.message||error)+'. Kiểm tra quyền Photos trong Cài đặt iPhone.');
+    }finally{state.saving=false;download.disabled=false;}
   }
   function placeModeBar(){
     const bar=$('modeOptions');
@@ -294,7 +386,9 @@
     else{document.querySelector('.setup-section > .control-label').after(bar);bar.classList.remove('quick-modes');}
     resizeCanvas();
   }
-  for(const b of document.querySelectorAll('.mode-option'))b.addEventListener('click',()=>changeMode(Number(b.dataset.count)));
+  for(const b of document.querySelectorAll('.mode-option'))b.addEventListener('click',()=>changeMode(Number(b.dataset.count),Number(b.dataset.shots||b.dataset.count)));
+  $('confirmPhotos').addEventListener('click',confirmSelected);
+  $('editPhotos').addEventListener('click',()=>{state.selectionFinal=false;state.active=0;state.shots=Array.from({length:state.count},()=>null);render();});
   for(const b of document.querySelectorAll('.editor-tab'))b.addEventListener('click',()=>{
     const isFrame=b.dataset.editor==='frame';
     $('filterPanel').hidden=isFrame;$('framePanel').hidden=!isFrame;
@@ -362,7 +456,7 @@
   shoot.addEventListener('click',capture);
   retake.addEventListener('click',retakeLast);
   reset.addEventListener('click',restart);
-  download.addEventListener('click',exportPhoto);
+  download.addEventListener('click',()=>{void saveToPhotos(false);});
   window.addEventListener('pagehide',stopStream);
   if(!secure){security.hidden=false;setStatus('Camera live cần HTTPS tin cậy.');}
   placeModeBar();

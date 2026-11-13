@@ -1,0 +1,90 @@
+name: BloomBooth iOS IPA (Sideloadly)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'mobile/**'
+      - 'ios-app/**'
+      - 'scripts/build-iphone-pwa.cjs'
+      - 'scripts/build-ios-app.cjs'
+      - 'scripts/configure-ios-plist.py'
+      - 'scripts/generate-pwa-icons.py'
+      - 'tests/iphone-native.test.cjs'
+      - 'tests/iphone-pwa.test.cjs'
+      - '.github/workflows/ios-sideloadly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: bloombooth-ios-ipa
+  cancel-in-progress: true
+jobs:
+  ipa:
+    name: Unsigned IPA for personal Sideloadly signing
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Configure Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ios-app/package-lock.json
+      - name: Validate BloomBooth source
+        run: |
+          node --check mobile/lite.js
+          node --check mobile/selection-engine.js
+          node tests/mobile-studio-v2.test.cjs
+          node tests/frame-layout-regression.test.cjs
+          node tests/mobile-filter-engine.test.cjs
+          node tests/selection-engine.test.cjs
+      - name: Install pinned iOS dependencies
+        run: npm ci --prefix ios-app --no-audit --no-fund
+      - name: Build embedded offline web assets
+        run: |
+          node scripts/build-iphone-pwa.cjs
+          node tests/iphone-pwa.test.cjs
+          node scripts/build-ios-app.cjs
+          npm run build:bridge --prefix ios-app
+          node tests/iphone-native.test.cjs
+      - name: Create iOS project on macOS
+        working-directory: ios-app
+        run: |
+          npx cap add ios
+          npx cap sync ios
+      - name: Configure iOS permissions for Camera and Photos
+        run: |
+          python3 scripts/configure-ios-plist.py ios-app/ios/App/App/Info.plist
+      - name: Build unsigned device app with Xcode
+        working-directory: ios-app
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+      - name: Package unsigned IPA for Sideloadly
+        run: |
+          set -euo pipefail
+          APP=ios-app/build/Build/Products/Release-iphoneos/App.app
+          test -d "$APP"
+          mkdir -p output/Payload
+          ditto "$APP" output/Payload/BloomBooth.app
+          cd output
+          zip -q -r ../BloomBooth-iOS-unsigned.ipa Payload
+          cd ..
+          unzip -tq BloomBooth-iOS-unsigned.ipa
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: BloomBooth-iOS-Sideloadly-unsigned-IPA
+          path: BloomBooth-iOS-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30

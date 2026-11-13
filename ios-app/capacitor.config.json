@@ -1,0 +1,10 @@
+{
+  "appId": "vn.bloombooth.personal",
+  "appName": "BloomBooth",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "ios": {
+    "contentInset": "always",
+    "preferredContentMode": "mobile"
+  }
+}

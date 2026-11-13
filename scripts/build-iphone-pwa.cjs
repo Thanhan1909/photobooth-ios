@@ -12,7 +12,7 @@ const source=path.join(root,'mobile');
 const output=path.join(root,'dist','iphone');
 const files=[
   'filter-engine.js','frame-art.js','studio-engine.js',
-  'lite.js','lite.css'
+  'selection-engine.js','lite.js','lite.css'
 ];
 const assets=['./','./index.html','./manifest.webmanifest',
   ...files.map(f=>'./'+f),

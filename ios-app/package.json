@@ -1,0 +1,20 @@
+{
+  "name": "bloombooth-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BloomBooth iOS native shell for Sideloadly",
+  "scripts": {
+    "build:bridge": "esbuild src/native-photos.js --bundle --format=iife --platform=browser --target=safari16 --outfile=www/native-photos.js",
+    "ios:add": "cap add ios",
+    "ios:sync": "cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "7.6.10",
+    "@capacitor/ios": "7.6.10",
+    "@capacitor-community/media": "8.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.6.10",
+    "esbuild": "0.28.2"
+  }
+}

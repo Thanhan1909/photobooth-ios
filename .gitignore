@@ -64,3 +64,9 @@ deploy/*.sha
 
 # Generated iPhone PWA distribution (built by GitHub Actions)
 /dist/
+
+# iOS native development build outputs
+/ios-app/node_modules/
+/ios-app/www/
+/ios-app/ios/
+/ios-app/build/

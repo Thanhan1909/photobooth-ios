@@ -39,10 +39,12 @@ jobs:
           docker compose exec -T photobooth node --check /app/mobile/lite.js
           docker compose exec -T photobooth node --check /app/mobile/frame-engine.js
           docker compose exec -T photobooth node --check /app/mobile/frame-art.js
+          docker compose exec -T photobooth node --check /app/mobile/selection-engine.js
           docker compose exec -T photobooth node --check /app/mobile/studio-engine.js
           docker compose exec -T photobooth node /app/tests/mobile-filter-engine.test.cjs
           docker compose exec -T photobooth node /app/tests/mobile-studio-v2.test.cjs
           docker compose exec -T photobooth node /app/tests/frame-layout-regression.test.cjs
+          docker compose exec -T photobooth node /app/tests/selection-engine.test.cjs
           docker compose exec -T photobooth php -l /app/index.php
           curl --fail --silent --show-error http://localhost:8085/mobile/ | grep -q 'BloomBooth'
           curl --fail --silent --show-error http://localhost:8085/mobile/filter-engine.js | grep -q 'PhotoboothFilters'

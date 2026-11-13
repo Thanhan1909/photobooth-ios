@@ -37,5 +37,6 @@ const html=fs.readFileSync(path.join(root,'index.html'),'utf8');
 assert.ok(html.includes('activeFrameCanvas'));
 assert.ok(html.includes('activeFrameName'));
 assert.ok(html.includes('studio-engine.js?v=10'));
-assert.ok(html.includes('lite.js?v=10'));
+assert.ok(html.includes('lite.js?v=11'));
+assert.ok(html.includes('selection-engine.js?v=11'));
 console.log('PASS: themed artwork uses one header/footer; plain frame keeps labels; live frame preview included');
