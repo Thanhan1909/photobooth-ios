@@ -31,6 +31,7 @@ jobs:
           node --check mobile/lite.js
           node --check mobile/frame-art.js
           node --check mobile/selection-engine.js
+          node --check mobile/template-library.js
           node --check mobile/editor-v4.js
           node --check mobile/layout-catalog.js
           node --check mobile/studio-engine.js
@@ -39,6 +40,7 @@ jobs:
           node tests/frame-layout-regression.test.cjs
           node tests/selection-engine.test.cjs
           node tests/editor-layouts.test.cjs
+          node tests/editor-camera-frame.test.cjs
       - name: Create standalone iPhone app with icons and offline cache
         run: node scripts/build-iphone-pwa.cjs
       - name: Validate Pages build and no private files

@@ -15,8 +15,8 @@
   const state={
     sources:[],selected:[],count:3,template:catalog.templates[0],
     rects:catalog.slots(catalog.templates[0],3),frame:studio.frames[0],
-    filter:effects.presets[0],overlay:null,drag:null,activeSlot:0,fit:'contain',
-    dirty:true
+    filter:effects.presets[0],overlay:null,backgroundImage:null,drag:null,activeSlot:0,fit:'contain',
+    dirty:true,cameraStream:null,cameraFacing:'user',cameraBusy:false,cameraAnimation:0
   };
   const srcCards=get('editorSources'),chosenCards=get('editorChosen');
   const layouts=get('editorTemplates');
@@ -24,8 +24,86 @@
   const stateInfo=get('editorSelectionState');
   const saveButton=get('editorSave');
   const showStatus=message=>{label.textContent=message;};
+  const cameraVideo=get('editorCameraVideo');
+  function updateCameraControls(){
+    const live=Boolean(state.cameraStream);
+    get('editorCameraStart').disabled=state.cameraBusy;
+    get('editorCameraStart').hidden=live;
+    get('editorCameraCapture').disabled=!live||!cameraVideo.videoWidth;
+    get('editorCameraCapture').textContent='● Chụp vào ô '+(state.activeSlot+1)+'/'+state.count;
+    get('editorCameraFlip').disabled=!live;
+    get('editorCameraStop').hidden=!live;
+    get('editorWorkspace').classList.toggle('editor-camera-active',live);
+  }
+  function stopCamera(){
+    if(state.cameraAnimation)cancelAnimationFrame(state.cameraAnimation);
+    state.cameraAnimation=0;
+    if(state.cameraStream){
+      state.cameraStream.getTracks().forEach(track=>track.stop());
+      state.cameraStream=null;
+    }
+    cameraVideo.srcObject=null;
+    updateCameraControls();
+    paint();
+  }
+  let lastPreviewPaint=0;
+  function cameraLoop(timestamp){
+    if(!state.cameraStream)return;
+    if(!get('editorWorkspace').hidden&&cameraVideo.videoWidth&&timestamp-lastPreviewPaint>95){
+      lastPreviewPaint=timestamp;
+      renderTo(canvas,false);
+    }
+    state.cameraAnimation=requestAnimationFrame(cameraLoop);
+  }
+  async function openEditorCamera(){
+    if(state.cameraBusy)return;
+    if(!navigator.mediaDevices?.getUserMedia||!window.isSecureContext){
+      showStatus('Camera cần HTTPS hoặc ứng dụng IPA iOS.');
+      return;
+    }
+    state.cameraBusy=true;
+    try{
+      if(state.cameraStream)stopCamera();
+      const stream=await navigator.mediaDevices.getUserMedia({
+        audio:false,video:{facingMode:{ideal:state.cameraFacing},
+          width:{ideal:1920},height:{ideal:1440}}
+      });
+      state.cameraStream=stream;
+      cameraVideo.srcObject=stream;
+      await cameraVideo.play();
+      updateCameraControls();
+      cameraLoop();
+      showStatus('Camera đang hiển thị trực tiếp trong ô '+(state.activeSlot+1)+
+        '. Chọn khung khác vẫn giữ camera.');
+    }catch(error){
+      stopCamera();
+      showStatus('Không thể mở camera: '+(error?.message||error));
+    }finally{state.cameraBusy=false;updateCameraControls();}
+  }
+  function captureIntoSelectedSlot(){
+    if(!state.cameraStream||!cameraVideo.videoWidth)return;
+    const video=cameraVideo;
+    const scale=Math.min(1,2200/Math.max(video.videoWidth,video.videoHeight));
+    const shot=document.createElement('canvas');
+    shot.width=Math.round(video.videoWidth*scale);
+    shot.height=Math.round(video.videoHeight*scale);
+    const c=shot.getContext('2d');
+    if(state.cameraFacing==='user'){
+      c.translate(shot.width,0);c.scale(-1,1);
+    }
+    c.drawImage(video,0,0,shot.width,shot.height);
+    const target=state.activeSlot;
+    state.sources.push({img:shot,name:'Camera '+(state.sources.length+1)});
+    state.selected[target]=state.sources.length-1;
+    state.activeSlot=(target+1)%state.count;
+    refreshSources();
+    paint();
+    showStatus('Đã chụp ô '+(target+1)+'. Tiếp theo: ô '+(state.activeSlot+1)+'.');
+  }
+
   function dimensions(){
-    const ratio=state.template.ratio||.5;
+    const ratio=state.backgroundImage?.width&&state.backgroundImage?.height
+      ?state.backgroundImage.width/state.backgroundImage.height:(state.template.ratio||.5);
     const w=1200,h=Math.max(1400,Math.round(w/ratio));
     return {w,h};
   }
@@ -55,8 +133,12 @@
     const c=target.getContext('2d'),w=target.width,h=target.height;
     // Use target-specific canvas to ensure saved JPEG equals what preview shows.
     const imageSources=usableShots();
-    catalog.drawBackground(c,w,h,state.template);
-    if(state.frame.id!=='plain'){
+    if(state.backgroundImage?.width){
+      c.drawImage(state.backgroundImage,0,0,w,h);
+    }else{
+      catalog.drawBackground(c,w,h,state.template);
+    }
+    if(!state.backgroundImage&&state.frame.id!=='plain'){
       // Decorative artwork never draws on top of the subject photos.
       window.BloomFrameArt.draw(c,w,h,state.frame);
     }
@@ -64,22 +146,34 @@
       const X=r.x*w,Y=r.y*h,W=r.w*w,H=r.h*h;
       c.save();c.fillStyle='#fffdfa';c.shadowColor='#664c5535';
       c.shadowBlur=w*.014;c.shadowOffsetY=w*.008;
-      c.fillRect(X-w*.004,Y-w*.004,W+w*.008,H+w*.008);
+      catalog.slotShape(c,X-w*.004,Y-w*.004,W+w*.008,H+w*.008,state.template);c.fill();
       c.restore();
+      const live=Boolean(!exportImage&&state.cameraStream&&cameraVideo.videoWidth&&state.activeSlot===i);
       let image=imageSources[i];
+      if(live){
+        // Small intermediate buffer keeps the iPhone preview responsive.
+        const temp=document.createElement('canvas');
+        temp.width=480;temp.height=Math.max(1,Math.round(480*cameraVideo.videoHeight/cameraVideo.videoWidth));
+        const vctx=temp.getContext('2d');
+        if(state.cameraFacing==='user'){
+          vctx.translate(temp.width,0);vctx.scale(-1,1);
+        }
+        vctx.drawImage(cameraVideo,0,0,temp.width,temp.height);
+        image=temp;
+      }
       if(image){
         if(!window.BloomEditorFilterCache)window.BloomEditorFilterCache=new WeakMap();
-        let cache=window.BloomEditorFilterCache.get(image);
+        let cache=live?null:window.BloomEditorFilterCache.get(image);
         if(!cache||cache.id!==state.filter.id){
           const filtered=document.createElement('canvas');
           effects.apply(filtered,image,state.filter);
           cache={id:state.filter.id,filtered};
-          window.BloomEditorFilterCache.set(image,cache);
+          if(!live)window.BloomEditorFilterCache.set(image,cache);
         }
         image=cache.filtered;
         const sw=image.width,sh=image.height,contain=Math.min(W/sw,H/sh),cover=Math.max(W/sw,H/sh);
         const scale=state.fit==='cover'?cover:contain;
-        c.save();c.beginPath();c.roundRect(X,Y,W,H,Math.min(W,H)*.055);c.clip();
+        c.save();catalog.slotShape(c,X,Y,W,H,state.template);c.clip();
         c.fillStyle='#fffdf9';c.fillRect(X,Y,W,H);
         if(state.fit!=='cover'){
           c.globalAlpha=.20;
@@ -89,14 +183,14 @@
         c.drawImage(image,X+(W-sw*scale)/2,Y+(H-sh*scale)/2,sw*scale,sh*scale);
         c.restore();
       }else{
-        c.save();c.fillStyle='#fcf7f5';c.fillRect(X,Y,W,H);
+        c.save();c.fillStyle='#fcf7f5';catalog.slotShape(c,X,Y,W,H,state.template);c.fill();
         c.fillStyle='#a18e97';c.textAlign='center';
         c.font='bold '+Math.max(12,Math.round(w*.05))+'px Arial';
         c.fillText(String(i+1).padStart(2,'0'),X+W/2,Y+H/2);
         c.restore();
       }
       c.save();c.strokeStyle=state.template.accent;c.lineWidth=w*.003;
-      c.strokeRect(X,Y,W,H);
+      catalog.slotShape(c,X,Y,W,H,state.template);c.stroke();
       if(!exportImage&&state.activeSlot===i){
         c.setLineDash([w*.009,w*.006]);c.strokeStyle='#c64775';c.lineWidth=w*.008;
         c.strokeRect(X-w*.006,Y-w*.006,W+w*.012,H+w*.012);
@@ -159,7 +253,7 @@
     if(!t)return;
     state.template=t;
     state.rects=catalog.slots(t,state.count);
-    state.activeSlot=0;drawTemplateGallerySelection();paint();
+    state.activeSlot=0;drawTemplateGallerySelection();paint();updateCameraControls();
     showStatus('Đã chọn '+t.label+'. Bố cục thay đổi ngay, giữ nguyên ảnh đã chọn.');
   }
   function drawTemplateGallerySelection(){
@@ -189,7 +283,7 @@
     const n=Number(next);
     if(!Number.isInteger(n)||n<1||n>10)return;
     state.count=n;state.selected=state.selected.slice(0,n);
-    state.rects=catalog.slots(state.template,n);state.activeSlot=0;
+    state.rects=catalog.slots(state.template,n);state.activeSlot=0;updateCameraControls();
     refreshSources();drawGallery();paint();
   }
   const loadFile=file=>new Promise((resolve,reject)=>{
@@ -267,6 +361,80 @@
     }catch(e){if(e.name!=='AbortError')showStatus('Lỗi lưu ảnh: '+e.message);}
     finally{updateControls();}
   }
+  const localLibrary=window.BloomTemplateLibrary;
+  function openImageData(url){
+    return new Promise((resolve,reject)=>{
+      if(!url){resolve(null);return;}
+      const img=new Image();
+      img.onload=()=>resolve(img);
+      img.onerror=()=>reject(Error('Không mở được hình ảnh của mẫu'));
+      img.src=url;
+    });
+  }
+  async function refreshPersonalTemplates(){
+    const box=get('editorPersonalTemplates');
+    box.replaceChildren();
+    if(!localLibrary)return;
+    try{
+      const list=await localLibrary.list();
+      if(!list.length){
+        const note=document.createElement('small');
+        note.textContent='Chưa có mẫu cá nhân. Hãy nhập nền hoặc PNG và bấm Lưu mẫu.';
+        box.append(note);return;
+      }
+      for(const template of list.sort((a,b)=>b.savedAt-a.savedAt)){
+        const row=document.createElement('div');row.className='personal-template-card';
+        const select=document.createElement('button');
+        select.type='button';select.className='btn btn-outline';
+        select.textContent=template.name+' · '+template.count+' ô';
+        select.addEventListener('click',()=>{void loadPersonalTemplate(template.id);});
+        const del=document.createElement('button');
+        del.type='button';del.className='btn btn-outline';del.textContent='Xóa';
+        del.addEventListener('click',()=>{
+          if(!window.confirm('Xóa mẫu '+template.name+' khỏi iPhone?'))return;
+          void localLibrary.remove(template.id).then(refreshPersonalTemplates);
+        });
+        row.append(select,del);box.append(row);
+      }
+    }catch(error){showStatus('Không đọc được thư viện: '+error.message);}
+  }
+  async function savePersonalTemplate(){
+    if(!localLibrary){showStatus('Thiếu thư viện lưu mẫu');return;}
+    const name=get('editorTemplateName').value.trim()||'Khung cá nhân';
+    const imageURL=image=>image?.toDataURL?
+      image.toDataURL('image/png'):image?.src||null;
+    try{
+      const saved=await localLibrary.save({
+        name,count:state.count,ratio:dimensions().w/dimensions().h,
+        layoutId:state.template.id,
+        rects:state.rects.map(rect=>({...rect})),
+        background:state.backgroundImage
+          ?(state.backgroundImage.toDataURL?.('image/jpeg',.9)||state.backgroundImage.src):null,
+        overlay:imageURL(state.overlay)
+      });
+      await refreshPersonalTemplates();
+      showStatus('Đã lưu mẫu '+name+' trong thư viện trên thiết bị. Mã: '+saved.slice(0,12));
+    }catch(error){showStatus('Không lưu được mẫu: '+error.message);}
+  }
+  async function loadPersonalTemplate(id){
+    try{
+      const template=await localLibrary.get(id);
+      if(!template)throw Error('Không tìm thấy mẫu');
+      const layout=catalog.templates.find(t=>t.id===template.layoutId);
+      if(!layout)throw Error('Bố cục không còn tồn tại');
+      const [bg,overlay]=await Promise.all([
+        openImageData(template.background),openImageData(template.overlay)
+      ]);
+      state.template=layout;state.count=template.count;
+      state.selected=state.selected.slice(0,state.count);
+      state.rects=template.rects.map(r=>({...r}));
+      state.backgroundImage=bg;state.overlay=overlay;state.activeSlot=0;
+      get('editorCount').value=String(state.count);
+      get('editorTemplateName').value=template.name;
+      refreshSources();drawGallery();paint();updateCameraControls();
+      showStatus('Đã mở mẫu '+template.name+'. Có thể bật camera và chụp thẳng vào các ô.');
+    }catch(error){showStatus('Lỗi mở mẫu: '+error.message);}
+  }
   let pointer=null;
   canvas.addEventListener('pointerdown',e=>{
     const b=canvas.getBoundingClientRect(),x=(e.clientX-b.left)/b.width,y=(e.clientY-b.top)/b.height;
@@ -288,8 +456,28 @@
     paint();
   });
   for(const type of ['pointerup','pointercancel'])canvas.addEventListener(type,()=>{pointer=null;});
+  get('editorTemplateSave').addEventListener('click',()=>{void savePersonalTemplate();});
+  get('editorCameraStart').addEventListener('click',()=>{void openEditorCamera();});
+  get('editorCameraCapture').addEventListener('click',captureIntoSelectedSlot);
+  get('editorCameraStop').addEventListener('click',stopCamera);
+  get('editorCameraFlip').addEventListener('click',()=>{
+    state.cameraFacing=state.cameraFacing==='user'?'environment':'user';
+    void openEditorCamera();
+  });
+  window.addEventListener('pagehide',stopCamera);
   get('editorCount').addEventListener('change',e=>setCount(e.target.value));
   get('editorUpload').addEventListener('change',e=>{void importFiles(e.target.files);e.target.value='';});
+  get('editorBackground').addEventListener('change',e=>{
+    const file=e.target.files?.[0];
+    if(file)void loadFile(file).then(image=>{
+      state.backgroundImage=image;paint();
+      showStatus('Đã nhập nền template. Kéo các ô ảnh trùng với từng vị trí trên mẫu.');
+    }).catch(error=>showStatus('Lỗi nhập nền: '+error.message));
+    e.target.value='';
+  });
+  get('editorClearBackground').addEventListener('click',()=>{
+    state.backgroundImage=null;paint();
+  });
   get('editorOverlay').addEventListener('change',e=>{
     const file=e.target.files?.[0];if(file)void loadOverlay(file);
   });
@@ -327,7 +515,10 @@
     get('editorWorkspace').scrollIntoView({behavior:'smooth',block:'start'});
     paint();
   });
-  get('editorClose').addEventListener('click',()=>{get('editorWorkspace').hidden=true;});
+  get('editorClose').addEventListener('click',()=>{
+    stopCamera();
+    get('editorWorkspace').hidden=true;
+  });
   get('editorFromCamera').addEventListener('click',()=>{
     const captured=window.BloomEditorBridge?.getCaptured?.()||[];
     for(const shot of captured)addSource(shot,'Ảnh chụp '+(state.sources.length+1));
@@ -336,5 +527,6 @@
   });
   // Makes any photo count accessible; capture itself is controlled by the camera screen.
   window.BloomEditor=Object.freeze({addSource,importFiles,setCount,save,chooseTemplate});
-  refreshSources();drawGallery();paint();
+  refreshSources();drawGallery();paint();updateCameraControls();
+  void refreshPersonalTemplates();
 })();

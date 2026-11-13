@@ -30,3 +30,27 @@ Publishing third-party designs inside another application's template library req
 - iOS native build and IPA: .github/workflows/ios-sideloadly.yml
 
 No cloud server is required to compose photos, and photos are not uploaded to the repository.
+## Camera directly inside a template (new)
+- Open Chỉnh sửa, choose any of 32 layout templates or a personally saved template.
+- Tap Mở camera trong khung. The active photo window shows the live camera feed at the template's coordinates.
+- Tap Chụp vào ô to capture just that window. The active slot advances and the source photo remains editable.
+- Front/back camera switching and stop controls are included. Filter selection is reflected in the preview.
+- The exact same per-template clipping path and composition are used for preview and Photos export.
+
+## Personal licensed template library
+- Import your own licensed JPG/PNG background (drawn behind captured photos) and/or transparent PNG overlay (drawn above photos).
+- Adjust photo-window positions so they match the background or overlay cutouts.
+- Choose a name and tap Lưu mẫu hiện tại. IndexedDB stores the background, overlay, count and slot positions on the device.
+- Open a saved frame later and photograph directly into its windows. The data is not uploaded to GitHub or the VPS.
+- Back up your templates externally if important: iOS may delete app data when an app is uninstalled or storage is reclaimed.
+
+## Third-party designs and Penci
+- Penci photobooth galleries showcase editable projects, but public availability and free online editing do not establish permission to redistribute their source graphics in a different application's IPA.
+- BloomBooth does not batch-download, scrape or package Penci designs. If you have licensed/exported a reusable frame, import it into your personal template library instead.
+- JPEG gallery previews already include sample subjects. They cannot automatically be treated as editable transparent frames; a clean background and/or transparent PNG overlay is preferable.
+
+## Verification
+- Remote Chrome: editor camera preview, per-slot capture, changing template, and stopping camera passed.
+- Remote Chrome: personal template saved in IndexedDB, persisted across reload and restored successfully.
+- Tests: tests/editor-camera-frame.test.cjs and tests/editor-layouts.test.cjs.
+- Native iOS Photos permissions and camera in the actual signed IPA still require physical-device verification.

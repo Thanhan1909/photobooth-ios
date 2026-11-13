@@ -46,6 +46,7 @@ jobs:
           docker compose exec -T photobooth node /app/tests/frame-layout-regression.test.cjs
           docker compose exec -T photobooth node /app/tests/selection-engine.test.cjs
           docker compose exec -T photobooth node /app/tests/editor-layouts.test.cjs
+          docker compose exec -T photobooth node /app/tests/editor-camera-frame.test.cjs
           docker compose exec -T photobooth php -l /app/index.php
           curl --fail --silent --show-error http://localhost:8085/mobile/ | grep -q 'BloomBooth'
           curl --fail --silent --show-error http://localhost:8085/mobile/filter-engine.js | grep -q 'PhotoboothFilters'

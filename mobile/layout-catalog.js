@@ -173,6 +173,51 @@ window.BloomLayoutCatalog=(()=>{
     }
     ctx.restore();
   }
+  function slotShape(ctx,x,y,w,h,template){
+    const id=template.id;
+    const motif=id.includes('heart')||id.includes('couple')?'heart':
+      id.includes('y2k')||id.includes('bubble')||id.includes('passport')?'oval':
+      id.includes('diary')||id.includes('graduation')||id.includes('holiday')?'arch':
+      id.includes('film')||id.includes('ticket')?'ticket':
+      id.includes('polaroid')||id.includes('postcard')?'paper':
+      id.includes('comic')||id.includes('zine')?'cut':'round';
+    const radius=Math.min(w,h);
+    ctx.beginPath();
+    if(motif==='oval'){
+      ctx.ellipse(x+w/2,y+h/2,w/2,h/2,0,0,Math.PI*2);
+    }else if(motif==='heart'){
+      ctx.moveTo(x+w/2,y+h*.19);
+      ctx.bezierCurveTo(x+w*.06,y-h*.09,x-w*.13,y+h*.37,x+w/2,y+h);
+      ctx.bezierCurveTo(x+w*1.13,y+h*.37,x+w*.94,y-h*.09,x+w/2,y+h*.19);
+      ctx.closePath();
+    }else if(motif==='arch'){
+      const r=Math.min(w/2,h*.44);
+      ctx.moveTo(x,y+h);ctx.lineTo(x,y+r);
+      ctx.arc(x+w/2,y+r,r,Math.PI,0);
+      ctx.lineTo(x+w,y+h);ctx.closePath();
+    }else if(motif==='ticket'){
+      const c=Math.min(w,h)*.075;
+      ctx.moveTo(x+c,y);ctx.lineTo(x+w-c,y);
+      ctx.quadraticCurveTo(x+w,y,x+w,y+c);
+      ctx.lineTo(x+w,y+h/2-c);
+      ctx.arc(x+w,y+h/2,c,-Math.PI/2,Math.PI/2,true);
+      ctx.lineTo(x+w,y+h-c);ctx.quadraticCurveTo(x+w,y+h,x+w-c,y+h);
+      ctx.lineTo(x+c,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-c);
+      ctx.lineTo(x,y+h/2+c);
+      ctx.arc(x,y+h/2,c,Math.PI/2,-Math.PI/2,true);
+      ctx.lineTo(x,y+c);ctx.quadraticCurveTo(x,y,x+c,y);ctx.closePath();
+    }else if(motif==='paper'){
+      const c=radius*.09;
+      ctx.moveTo(x+c,y);ctx.lineTo(x+w-c,y);ctx.lineTo(x+w,y+c);
+      ctx.lineTo(x+w,y+h-c);ctx.lineTo(x+w-c,y+h);ctx.lineTo(x+c,y+h);
+      ctx.lineTo(x,y+h-c);ctx.lineTo(x,y+c);ctx.closePath();
+    }else if(motif==='cut'){
+      ctx.moveTo(x+w*.12,y);ctx.lineTo(x+w,y);ctx.lineTo(x+w,y+h*.88);
+      ctx.lineTo(x+w*.88,y+h);ctx.lineTo(x,y+h);ctx.lineTo(x,y+h*.12);ctx.closePath();
+    }else{
+      ctx.roundRect(x,y,w,h,radius*.085);
+    }
+  }
   function drawBackground(ctx,w,h,t){
     ctx.save();ctx.fillStyle=t.bg;ctx.fillRect(0,0,w,h);
     const a=t.accent,vari=t.variation;
@@ -201,5 +246,5 @@ window.BloomLayoutCatalog=(()=>{
     ornaments(ctx,w,h,t);
     ctx.restore();
   }
-  return Object.freeze({templates,slots,drawBackground});
+  return Object.freeze({templates,slots,slotShape,drawBackground});
 })();

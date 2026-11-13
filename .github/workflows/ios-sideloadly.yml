@@ -11,6 +11,7 @@ on:
       - 'scripts/generate-pwa-icons.py'
       - 'tests/iphone-native.test.cjs'
       - 'tests/editor-layouts.test.cjs'
+      - 'tests/editor-camera-frame.test.cjs'
       - 'tests/iphone-pwa.test.cjs'
       - '.github/workflows/ios-sideloadly.yml'
   workflow_dispatch:
@@ -42,6 +43,7 @@ jobs:
           node tests/mobile-filter-engine.test.cjs
           node tests/selection-engine.test.cjs
           node tests/editor-layouts.test.cjs
+          node tests/editor-camera-frame.test.cjs
       - name: Install pinned iOS dependencies
         run: npm ci --prefix ios-app --no-audit --no-fund
       - name: Build embedded offline web assets

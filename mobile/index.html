@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fff8f2"><title>BloomBooth — Photo Studio</title>
-<link rel="stylesheet" href="/mobile/lite.css?v=12">
+<link rel="stylesheet" href="/mobile/lite.css?v=15">
 </head>
 <body>
 <header class="header"><div class="brand"><span class="flower">✿</span><span>BLOOM<span class="accent">BOOTH</span><small>YOUR PHOTO STUDIO</small></span></div><span class="head-note">Chụp ảnh, chọn khung, lưu khoảnh khắc ♡</span></header>
@@ -72,6 +72,13 @@
  </div>
  <div class="editor-workspace-grid">
   <div class="editor-workspace-preview">
+   <div class="editor-live-camera-controls">
+    <button id="editorCameraStart" class="btn btn-primary" type="button">◉ Mở camera trong khung</button>
+    <button id="editorCameraCapture" class="btn btn-coral" type="button" disabled>● Chụp vào ô 1</button>
+    <button id="editorCameraFlip" class="btn btn-outline" type="button" disabled>⇄ Đổi camera</button>
+    <button id="editorCameraStop" class="btn btn-outline" type="button" hidden>Đóng camera</button>
+   </div>
+   <video id="editorCameraVideo" autoplay muted playsinline aria-hidden="true" hidden></video>
    <canvas id="editCanvas" width="420" height="900" aria-label="Bản xem trước bố cục khung và ảnh"></canvas>
    <div class="editor-workspace-tools">
     <label>Kiểu lấp ảnh <select id="editorFit"><option value="contain">Giữ toàn ảnh (không cắt)</option><option value="cover">Lấp đầy khung (cắt viền)</option></select></label>
@@ -95,11 +102,19 @@
    <div id="editorSources" class="editor-sources"></div>
    <div class="editor-slot-heading"><b>Chọn bố cục độc lập</b><span>32 kiểu</span></div>
    <div id="editorTemplates" class="editor-templates" aria-label="Thư viện bố cục ảnh độc lập"></div>
+   <div class="editor-slot-heading"><b>Thư viện khung cá nhân trên iPhone</b></div>
+   <div class="editor-import-actions"><input id="editorTemplateName" class="editor-template-name" type="text" maxlength="90" placeholder="Tên mẫu của bạn" value="Khung cá nhân"><button id="editorTemplateSave" type="button" class="btn btn-coral">Lưu mẫu hiện tại</button></div>
+   <div id="editorPersonalTemplates" class="editor-personal-templates" aria-label="Những mẫu bạn đã lưu riêng trên iPhone"></div>
+   <p class="help-text">Các mẫu cá nhân chỉ được lưu trong ứng dụng trên thiết bị này. Nếu xóa dữ liệu ứng dụng, thư viện có thể bị mất. <a href="https://penci.vn/mau-thiet-ke-bo-anh-photobooth.html" target="_blank" rel="noopener noreferrer">Xem mẫu Penci để tham khảo</a> · Chỉ nhập file thiết kế bạn được phép tái sử dụng.</p>
    <div class="editor-slot-heading"><b>Thêm trang trí</b><span>41 chủ đề</span></div>
    <select id="editorTheme" aria-label="Chọn khung chủ đề" class="editor-full-select"></select>
    <div class="editor-slot-heading"><b>Filter màu</b></div>
    <select id="editorFilter" aria-label="Chọn filter ảnh" class="editor-full-select"></select>
-   <div class="editor-slot-heading"><b>Khung PNG của bạn</b></div>
+   <div class="editor-slot-heading"><b>Nền mẫu của bạn (JPG/PNG)</b></div>
+   <label class="btn btn-outline editor-file-button">Nhập nền template đã có quyền sử dụng <input id="editorBackground" type="file" accept="image/png,image/jpeg,image/webp" hidden></label>
+   <button type="button" id="editorClearBackground" class="btn btn-outline">Bỏ nền mẫu</button>
+   <p class="help-text">Nhập file template không có ảnh người mẫu, hoặc dùng ô ảnh mới phủ kín các vùng ảnh cũ. Sau đó kéo từng ô để khớp với mẫu. Nền mẫu không được tải lên server.</p>
+   <div class="editor-slot-heading"><b>Khung PNG trong suốt của bạn</b></div>
    <label class="btn btn-outline editor-file-button">Nhập khung PNG trong suốt <input id="editorOverlay" type="file" accept="image/png,image/webp" hidden></label>
    <button type="button" id="editorClearOverlay" class="btn btn-outline">Bỏ khung PNG đã nhập</button>
    <p class="help-text">Hãy chỉ nhập các mẫu bạn sở hữu hoặc được phép sử dụng. Vị trí ô ảnh có thể kéo và điều chỉnh để khớp với mẫu.</p>
@@ -110,8 +125,9 @@
 <script src="/mobile/filter-engine.js?v=8" defer></script>
 <script src="/mobile/frame-art.js?v=10" defer></script>
 <script src="/mobile/studio-engine.js?v=12" defer></script>
-<script src="/mobile/layout-catalog.js?v=12" defer></script>
+<script src="/mobile/layout-catalog.js?v=14" defer></script>
 <script src="/mobile/selection-engine.js?v=11" defer></script>
 <script src="/mobile/lite.js?v=12" defer></script>
-<script src="/mobile/editor-v4.js?v=12" defer></script>
+<script src="/mobile/template-library.js?v=15" defer></script>
+<script src="/mobile/editor-v4.js?v=15" defer></script>
 </body></html>
