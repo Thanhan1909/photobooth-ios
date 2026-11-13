@@ -69,3 +69,11 @@ canvas.frame-preview{background:#faf0eb}
   .setup-section>.control-label:first-child{display:none}
   .setup-section>.layout-title{margin-top:0}
 }
+
+/* Selected frame is always visible while scrolling the frame gallery on iPhone. */
+.active-frame-preview{position:sticky;top:8px;z-index:8;display:flex;align-items:center;gap:12px;padding:10px 12px;margin:12px 0;border:1px solid #efd8d4;border-radius:14px;background:rgba(255,251,248,.98);box-shadow:0 6px 18px #aa7d7328;min-height:116px}
+.active-frame-preview canvas{width:auto;max-width:90px;max-height:126px;height:auto;object-fit:contain;border-radius:5px;box-shadow:0 1px 7px #7a65543d;flex-shrink:0}
+.active-frame-copy{display:flex;flex-direction:column;gap:7px;min-width:0}
+.active-frame-copy strong{font-size:13px;line-height:1.35;color:#704e54}
+.active-frame-copy small{font-size:11px;color:#a18585;line-height:1.4}
+@media(max-width:430px){.active-frame-preview{top:4px}.active-frame-preview canvas{max-width:72px;max-height:110px}}

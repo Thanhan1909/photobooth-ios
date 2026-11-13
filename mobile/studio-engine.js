@@ -98,11 +98,15 @@ window.BloomStudio = (() => {
     const ctx=canvas.getContext('2d');const w=canvas.width,h=canvas.height;
     const style=frames.find(f=>f.id===frame)||frames[0];
     ctx.fillStyle=style.bg;ctx.fillRect(0,0,w,h);
-    ctx.fillStyle=style.ink;ctx.textAlign='center';
-    ctx.font='800 '+Math.max(8,Math.round(w*.049))+'px Arial';
-    ctx.fillText(style.title||'BLOOM BOOTH',w/2,h*.058,w*.87);
-    ctx.font=Math.max(5,Math.round(w*.019))+'px Arial';
-    ctx.fillText(style.id==='plain'?'COLLECT YOUR LITTLE MOMENTS':'BLOOM BOOTH STUDIO',w/2,h*.077,w*.9);
+    // Themed artwork draws its own heading. Only the plain frame needs generic lettering.
+    // Drawing both caused stacked text (e.g. QUACK over QUACK QUACK).
+    if(style.id==='plain'){
+      ctx.fillStyle=style.ink;ctx.textAlign='center';
+      ctx.font='800 '+Math.max(8,Math.round(w*.049))+'px Arial';
+      ctx.fillText('BLOOM BOOTH',w/2,h*.058,w*.87);
+      ctx.font=Math.max(5,Math.round(w*.019))+'px Arial';
+      ctx.fillText('COLLECT YOUR LITTLE MOMENTS',w/2,h*.077,w*.9);
+    }
     const actual=rects||cloneRects(count,layout);
     actual.forEach((r,i)=>{
       const x=r.x*w,y=r.y*h,rw=r.w*w,rh=r.h*h;
@@ -127,9 +131,12 @@ window.BloomStudio = (() => {
       }
     });
     window.BloomFrameArt.draw(ctx,w,h,style);
-    ctx.fillStyle=style.ink;ctx.textAlign='center';
-    ctx.font='italic '+Math.max(7,Math.round(w*.026))+'px Georgia';
-    ctx.fillText(count===1?'One lovely moment':count+' little moments in one',w/2,h*.959);
+    // Every themed design already owns its caption/footer. Avoid second overlay.
+    if(style.id==='plain'){
+      ctx.fillStyle=style.ink;ctx.textAlign='center';
+      ctx.font='italic '+Math.max(7,Math.round(w*.026))+'px Georgia';
+      ctx.fillText(count===1?'One lovely moment':count+' little moments in one',w/2,h*.959);
+    }
     return actual;
   }
   return Object.freeze({frames,layouts,dimensions,presets,cloneRects,constrain,hit,render});

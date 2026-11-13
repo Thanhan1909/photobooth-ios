@@ -56,11 +56,23 @@
     video.style.display='block';video.style.filter=state.filter.css;
     video.classList.toggle('mirror',state.facing==='user');
   }
+  function updateActiveFramePreview(){
+    const detail=$('activeFrameCanvas');
+    if(!detail)return;
+    const dim=studio.dimensions(state.count);
+    detail.width=180;
+    detail.height=Math.round(180*dim.h/dim.w);
+    // Use the exact same art/composition logic for the sticky preview and main photo.
+    studio.render(detail,{count:state.count,layout:state.layout,rects:state.rects,
+      shots:renderedShots(),frame:state.frame.id,filter:state.filter,preFiltered:true,preview:false});
+    $('activeFrameName').textContent=state.frame.label;
+  }
   function renderCanvas(){
     studio.render(preview,{count:state.count,layout:state.layout,rects:state.rects,
       shots:renderedShots(),frame:state.frame.id,filter:state.filter,preFiltered:true,
       selected:state.manual?state.selected:-1,preview:true});
     positionLive();
+    updateActiveFramePreview();
   }
   function render(){
     renderCanvas();
@@ -173,7 +185,18 @@
       const label=document.createElement('span');label.className='filter-label';label.textContent=f.label;
       const check=document.createElement('span');check.className='check';check.textContent='✓';
       b.append(c,check,label);
-      b.addEventListener('click',()=>{state.frame=f;showFrames();render();refreshPreviews(true);});
+      b.addEventListener('click',()=>{
+        // Do not regenerate all 41 frame thumbnails on every tap: this stalled Safari.
+        // First repaint the actual captured photo synchronously, then update selection state.
+        state.frame=f;
+        renderCanvas();
+        box.querySelectorAll('.filter-option').forEach(option=>{
+          const selected=option.dataset.value===f.id;
+          option.classList.toggle('active',selected);
+          option.setAttribute('aria-pressed',String(selected));
+        });
+        setStatus('Đã đổi khung sang '+f.label+'. Ảnh đã chụp và file tải về đã cập nhật.');
+      });
       box.appendChild(b);
     }
     refreshPreviews(true);
