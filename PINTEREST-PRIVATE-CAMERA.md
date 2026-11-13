@@ -21,10 +21,11 @@
 
 1. Bật GitHub Pages cho repository nếu chưa bật: Settings > Pages > Build and deployment > Source GitHub Actions.
 2. Mở ứng dụng bằng HTTPS GitHub Pages: https://thanhan1909.github.io/photobooth-ios/ .
-3. Khi laptop còn bật và iPhone cùng Wi-Fi, tải ZIP riêng từ link LAN phía trên, lưu vào Files trên iPhone rồi giải nén.
-4. Trong trình Chỉnh sửa PWA, chọn Nạp mẫu từ iPhone và chọn các file ref_01.jpg...ref_14.jpg.
-5. Các ảnh mẫu sẽ được lưu vào IndexedDB trong phạm vi ứng dụng của URL GitHub Pages, không upload lên GitHub hay VPS.
-6. Thêm PWA vào màn hình chính Safari. Sau lần tải đầu và khi cache còn, bạn dùng offline không cần bật laptop.
+3. Khi laptop còn bật và iPhone cùng Wi-Fi, tải ZIP riêng từ link LAN phía trên, lưu nguyên ZIP vào Files trên iPhone.
+4. Trong trình Chỉnh sửa PWA hoặc IPA, bấm **Nạp trực tiếp ZIP — tự lưu khung** và chọn nguyên file Pinterest-14-personal-frames.zip. Không cần giải nén hay lưu từng khung.
+5. Khi báo đã nạp 14/14, tất cả khung nằm trong **Thư viện khung cá nhân** trên iPhone; lần sau chỉ cần chọn khung để chụp.
+6. Các ảnh mẫu sẽ được lưu vào IndexedDB trong phạm vi ứng dụng của URL GitHub Pages, không upload lên GitHub hay VPS.
+7. Thêm PWA vào màn hình chính Safari. Sau lần tải đầu và khi cache còn, bạn dùng offline không cần bật laptop.
 
 ## Quan trọng
 

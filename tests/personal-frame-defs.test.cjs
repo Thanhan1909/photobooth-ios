@@ -21,6 +21,8 @@ assert.ok(importer.includes('library.save('));
 assert.ok(importer.includes('photoReplace:true'));
 assert.ok(importer.includes('installLocalPack'));
 assert.ok(importer.includes('importFiles'));
+assert.ok(importer.includes('importZip'));
+assert.ok(fs.existsSync(path.join(root,'mobile','vendor','fflate.min.js')));
 const editor=fs.readFileSync(path.join(root,'mobile','editor-v4.js'),'utf8');
 assert.ok(editor.includes('state.photoReplace'));
 assert.ok(editor.includes('editorLoadLocalPinterest'));

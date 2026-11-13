@@ -518,6 +518,11 @@
     const importer=window.BloomPersonalFrameImporter;
     if(importer)void importPersonalTask(progress=>importer.installLocalPack(progress));
   });
+  get('editorImportZip').addEventListener('change',e=>{
+    const file=e.target.files?.[0];e.target.value='';
+    const importer=window.BloomPersonalFrameImporter;
+    if(file&&importer)void importPersonalTask(progress=>importer.importZip(file,progress));
+  });
   get('editorLoadPinterestFiles').addEventListener('change',e=>{
     const selected=Array.from(e.target.files||[]);e.target.value='';
     const importer=window.BloomPersonalFrameImporter;

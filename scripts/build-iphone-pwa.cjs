@@ -18,11 +18,14 @@ const assets=['./','./index.html','./manifest.webmanifest',
   ...files.map(f=>'./'+f),
   ...fs.readdirSync(path.join(source,'frames')).filter(f=>f.endsWith('.svg')).map(f=>'./frames/'+f),
   './frame-gallery.html',
+  './vendor/fflate.min.js',
   './icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png'];
 fs.rmSync(output,{recursive:true,force:true});
 fs.mkdirSync(path.join(output,'icons'),{recursive:true});
 for(const name of files)fs.copyFileSync(path.join(source,name),path.join(output,name));
 fs.cpSync(path.join(source,'frames'),path.join(output,'frames'),{recursive:true});
+fs.mkdirSync(path.join(output,'vendor'),{recursive:true});
+fs.copyFileSync(path.join(source,'vendor','fflate.min.js'),path.join(output,'vendor','fflate.min.js'));
 if(fs.existsSync(path.join(source,'frame-gallery.html'))){
   fs.copyFileSync(path.join(source,'frame-gallery.html'),path.join(output,'frame-gallery.html'));
 }

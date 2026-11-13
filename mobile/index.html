@@ -108,9 +108,10 @@
    <div class="editor-slot-heading"><b>Khung Pinterest cá nhân — chụp trực tiếp</b><span>14 mẫu của bạn</span></div>
    <div class="editor-import-actions">
      <button type="button" id="editorLoadLocalPinterest" class="btn btn-coral">Nạp 14 mẫu từ ổ E (trên mạng LAN)</button>
-     <label class="btn btn-outline editor-file-button">Nạp mẫu từ iPhone <input id="editorLoadPinterestFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label>
+     <label class="btn btn-primary editor-file-button">Nạp trực tiếp ZIP — tự lưu khung <input id="editorImportZip" type="file" accept=".zip,application/zip,application/x-zip-compressed" hidden></label>
+     <label class="btn btn-outline editor-file-button">Nạp từng ảnh từ iPhone <input id="editorLoadPinterestFiles" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></label>
    </div>
-   <p class="help-text">Các JPG gốc được lưu riêng trên thiết bị trong Thư viện khung cá nhân. Bạn chụp thẳng vào từng ô, không cần vẽ lại khung. Trên iPhone dùng link độc lập, hãy chọn 14 ảnh ref_01.jpg…ref_14.jpg từ ứng dụng Files một lần.</p>
+   <p class="help-text">Chỉ cần chọn file ZIP một lần: BloomBooth tự giải nén và lưu từng khung vào Thư viện khung cá nhân trên thiết bị. Lần sau mở lại, chọn khung có sẵn để chụp; không cần nạp lại ZIP. Nếu xoá ứng dụng hoặc dữ liệu trang web, bạn cần nạp lại.</p>
    <div class="editor-slot-heading"><b>Thư viện khung cá nhân trên iPhone</b></div>
    <div class="editor-import-actions"><input id="editorTemplateName" class="editor-template-name" type="text" maxlength="90" placeholder="Tên mẫu của bạn" value="Khung cá nhân"><button id="editorTemplateSave" type="button" class="btn btn-coral">Lưu mẫu hiện tại</button></div>
    <div id="editorPersonalTemplates" class="editor-personal-templates" aria-label="Những mẫu bạn đã lưu riêng trên iPhone"></div>
@@ -140,6 +141,7 @@
 <script src="/mobile/lite.js?v=12" defer></script>
 <script src="/mobile/template-library.js?v=15" defer></script>
 <script src="/mobile/personal-frame-defs.js?v=17" defer></script>
-<script src="/mobile/personal-frame-import.js?v=17" defer></script>
-<script src="/mobile/editor-v4.js?v=17" defer></script>
+<script src="/mobile/vendor/fflate.min.js?v=18" defer></script>
+<script src="/mobile/personal-frame-import.js?v=18" defer></script>
+<script src="/mobile/editor-v4.js?v=18" defer></script>
 </body></html>

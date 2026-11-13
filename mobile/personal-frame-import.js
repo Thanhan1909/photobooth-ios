@@ -63,6 +63,45 @@ window.BloomPersonalFrameImporter=(()=>{
     }
     return summary;
   }
+  async function importZip(file,onProgress=()=>{}){
+    if(!file || !(/\.zip$/i.test(file.name)||file.type==='application/zip'))
+      throw Error('Hãy chọn file ZIP chứa ảnh ref_01.jpg đến ref_14.jpg');
+    if(file.size>25*1024*1024)throw Error('File ZIP vượt giới hạn 25 MB');
+    if(!window.fflate?.unzipSync)throw Error('Thiếu bộ giải nén ZIP offline');
+    const bytes=new Uint8Array(await file.arrayBuffer());
+    let contents;
+    try{
+      // Filter expected JPEG/PNG entries before inflation. Ignore unrelated
+      // archives and path metadata, including ZIP paths and hidden files.
+      contents=window.fflate.unzipSync(bytes,{
+        filter:entry=>{
+          const basename=entry.name.split('/').pop().split(String.fromCharCode(92)).pop()||'';
+          const index=getIndex(basename);
+          return Number.isInteger(index)&&index>=1&&index<=14
+            &&/\.(jpe?g|png|webp)$/i.test(basename)
+            &&entry.originalSize<=12*1024*1024;
+        }
+      });
+    }catch(error){throw Error('ZIP bị lỗi hoặc không đọc được: '+error.message);}
+    const files=[];
+    const used=new Set();
+    let total=0;
+    for(const [name,data] of Object.entries(contents)){
+      const basename=name.split('/').pop().split(String.fromCharCode(92)).pop()||'';
+      const number=getIndex(basename);
+      if(!number||used.has(number))continue;
+      total+=data.byteLength;
+      if(total>60*1024*1024)throw Error('Tổng dữ liệu ảnh trong ZIP vượt 60 MB');
+      used.add(number);
+      const ext=(basename.split('.').pop()||'jpg').toLowerCase();
+      files.push(new File([data],'ref_'+normalize(number)+'.'+ext,{
+        type:ext==='png'?'image/png':ext==='webp'?'image/webp':'image/jpeg'
+      }));
+    }
+    if(!files.length)throw Error('ZIP không có ảnh ref_01.jpg ... ref_14.jpg');
+    onProgress('Đã đọc ZIP: '+files.length+' mẫu, đang lưu vào thư viện cá nhân');
+    return importFiles(files,onProgress);
+  }
   async function installLocalPack(onProgress=()=>{}){
     // Works on the user-owned LAN server only. Public GitHub builds do not
     // contain the JPEGs; no Pinterest images are uploaded or shared.
@@ -82,5 +121,5 @@ window.BloomPersonalFrameImporter=(()=>{
     }
     return result;
   }
-  return Object.freeze({importFiles,installLocalPack,getIndex});
+  return Object.freeze({importFiles,importZip,installLocalPack,getIndex});
 })();

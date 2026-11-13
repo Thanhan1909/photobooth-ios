@@ -8,7 +8,7 @@ const manifest=JSON.parse(fs.readFileSync(path.join(output,'manifest.webmanifest
 const serviceWorker=fs.readFileSync(path.join(output,'sw.js'),'utf8');
 for(const src of [
  'filter-engine.js','studio-engine.js','frame-art.js','selection-engine.js','layout-catalog.js','curated-frames.js','template-library.js','personal-frame-defs.js','personal-frame-import.js','editor-v4.js','lite.js','lite.css',
- 'pwa.js','sw.js','manifest.webmanifest',
+ 'vendor/fflate.min.js','pwa.js','sw.js','manifest.webmanifest',
  'icons/icon-180.png','icons/icon-192.png','icons/icon-512.png'
 ]){
  assert.ok(fs.existsSync(path.join(output,src)),'Missing '+src);
