@@ -85,6 +85,7 @@
     shoot.disabled=complete||photoProgress>=goal||!state.stream;
     retake.hidden=state.pickMode?(!state.pool.length||state.selectionFinal):state.active===0;
     reset.hidden=state.pickMode?!state.pool.length:state.active===0;
+    $('editCurrent').hidden=!hasShot();
     download.disabled=!complete;
     renderCandidates();
     $('downloadDescription').textContent=complete
@@ -273,7 +274,10 @@
     if(state.active===state.count){stopStream();flip.disabled=true;}
     state.selected=Math.min(state.active,state.count-1);
     state.swapFrom=-1;render();refreshPreviews(true);
-    if(state.active===state.count){void saveToPhotos(true);}else setStatus('Đã chụp '+state.active+'/'+state.count+' ảnh.');
+    if(state.active===state.count){
+      if($('autoSaveCapture').checked)void saveToPhotos(true);
+      else setStatus('Đã chụp đủ '+state.count+' ảnh. Nhấn Chỉnh sửa ảnh đã chụp để chọn và ghép theo ý bạn.');
+    }else setStatus('Đã chụp '+state.active+'/'+state.count+' ảnh.');
   }
   function retakeLast(){
     if(state.pickMode&&state.selectionFinal){
@@ -386,7 +390,26 @@
     else{document.querySelector('.setup-section > .control-label').after(bar);bar.classList.remove('quick-modes');}
     resizeCanvas();
   }
-  for(const b of document.querySelectorAll('.mode-option'))b.addEventListener('click',()=>changeMode(Number(b.dataset.count),Number(b.dataset.shots||b.dataset.count)));
+  for(const b of document.querySelectorAll('.mode-option'))b.addEventListener('click',()=>{
+    changeMode(Number(b.dataset.count),Number(b.dataset.shots||b.dataset.count));
+    $('autoSaveCapture').checked=true;
+  });
+  $('cameraApplyCount').addEventListener('click',()=>{
+    const count=Number($('cameraCustomCount').value);
+    if(!Number.isInteger(count)||count<1||count>10){
+      setStatus('Số ảnh phải là số nguyên từ 1 đến 10.');return;
+    }
+    changeMode(count);
+    $('autoSaveCapture').checked=false; // custom batches usually continue to the editor
+  });
+  // Explicitly share originals with the separate editor; it never modifies
+  // the camera session or uploads pictures to any server.
+  window.BloomEditorBridge=Object.freeze({
+    getCaptured:()=>state.pool.length?state.pool.slice():state.shots.filter(Boolean)
+  });
+  $('editCurrent').addEventListener('click',()=>{
+    $('editorOpen').click();$('editorFromCamera').click();
+  });
   $('confirmPhotos').addEventListener('click',confirmSelected);
   $('editPhotos').addEventListener('click',()=>{state.selectionFinal=false;state.active=0;state.shots=Array.from({length:state.count},()=>null);render();});
   for(const b of document.querySelectorAll('.editor-tab'))b.addEventListener('click',()=>{

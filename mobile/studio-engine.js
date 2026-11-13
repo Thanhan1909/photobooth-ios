@@ -7,8 +7,12 @@ window.BloomStudio = (() => {
     {id:'zigzag',label:'Zigzag'},
     {id:'collage',label:'Collage'}
   ];
-  function dimensions(count){return count===1?{w:1200,h:1600}:count===3?{w:1200,h:2700}:{w:1200,h:3500};}
+  function dimensions(count){return count===1?{w:1200,h:1600}:count===3?{w:1200,h:2700}:count===5?{w:1200,h:3500}:{w:1200,h:Math.min(4700,1600+count*420)};}
   function presets(count,layout){
+    if(count!==1&&count!==3&&count!==5&&window.BloomLayoutCatalog){
+      const id=layout==='grid'?'checkerboard':layout==='zigzag'?'alternating':layout==='collage'?'sticker-collage':'classic-strip';
+      return window.BloomLayoutCatalog.slots(id,count);
+    }
     if(count===1)return [{x:.09,y:.13,w:.82,h:.73}];
     if(layout==='grid'){
       if(count===3)return [
@@ -107,6 +111,8 @@ window.BloomStudio = (() => {
       ctx.font=Math.max(5,Math.round(w*.019))+'px Arial';
       ctx.fillText('COLLECT YOUR LITTLE MOMENTS',w/2,h*.077,w*.9);
     }
+    // Artwork is behind photos, so text and stickers never cover faces.
+    window.BloomFrameArt.draw(ctx,w,h,style);
     const actual=rects||cloneRects(count,layout);
     actual.forEach((r,i)=>{
       const x=r.x*w,y=r.y*h,rw=r.w*w,rh=r.h*h;
@@ -130,7 +136,6 @@ window.BloomStudio = (() => {
         ctx.strokeStyle='#e03f74';ctx.strokeRect(x-w*.009,y-w*.009,rw+w*.018,rh+w*.018);ctx.restore();
       }
     });
-    window.BloomFrameArt.draw(ctx,w,h,style);
     // Every themed design already owns its caption/footer. Avoid second overlay.
     if(style.id==='plain'){
       ctx.fillStyle=style.ink;ctx.textAlign='center';

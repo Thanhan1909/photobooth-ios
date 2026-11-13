@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#fff8f2"><title>BloomBooth — Photo Studio</title>
-<link rel="stylesheet" href="/mobile/lite.css?v=10">
+<link rel="stylesheet" href="/mobile/lite.css?v=12">
 </head>
 <body>
 <header class="header"><div class="brand"><span class="flower">✿</span><span>BLOOM<span class="accent">BOOTH</span><small>YOUR PHOTO STUDIO</small></span></div><span class="head-note">Chụp ảnh, chọn khung, lưu khoảnh khắc ♡</span></header>
 <main class="wrap">
 <section class="intro"><span class="overline">MAKE YOUR OWN MEMORIES</span><h1>Chụp một tấm, <em>hoặc cả câu chuyện.</em></h1><p>1 ảnh độc lập hoặc nhiều ảnh trong một khung. Bạn tự chọn bố cục và vị trí của từng ô.</p></section>
+<div class="studio-entry"><button id="editorOpen" class="btn btn-primary" type="button">✦ Chỉnh sửa ảnh · Chọn khung, ghép ảnh, thêm từ Photos</button><span>Chọn bao nhiêu ảnh tùy thích (1–10 ô), đổi bố cục sau khi chụp</span></div>
 <div class="layout">
 <section class="camera-panel" aria-label="Máy ảnh BloomBooth">
   <div class="section-top"><span class="live-dot"></span><strong>CAMERA STUDIO</strong><span id="shotCounter" class="camera-counter">0 / 3</span></div>
@@ -19,6 +20,7 @@
     <button type="button" id="flip" class="btn btn-outline" disabled>⇄ Đổi camera</button>
     <button type="button" id="shoot" class="btn btn-coral" disabled>● Chụp ô 1/3</button>
     <button type="button" id="retake" class="btn btn-outline" hidden>↻ Chụp lại ô cuối</button>
+    <button type="button" id="editCurrent" class="btn btn-primary" hidden>✦ Chỉnh sửa ảnh đã chụp</button>
     <button type="button" id="resetStrip" class="btn btn-outline" hidden>↺ Chụp bộ mới</button>
   </div>
   <div id="photoSelectionPanel" class="photo-selection-panel" hidden>
@@ -41,9 +43,10 @@
     <div class="mode-options" id="modeOptions">
       <button type="button" data-count="1" class="mode-option">1 ảnh <small>Ảnh đơn</small></button>
       <button type="button" data-count="3" class="mode-option active">3 ảnh <small>Photo strip</small></button>
-      <button type="button" data-count="3" data-shots="5" class="mode-option">5 chụp → 3 chọn <small>Chọn 3 tấm đẹp nhất</small></button>
       <button type="button" data-count="5" class="mode-option">5 ảnh <small>Collage</small></button>
     </div>
+<label class="capture-save-toggle"><input id="autoSaveCapture" type="checkbox" checked> Tự lưu khi chụp đủ ảnh <small>(bỏ chọn để chỉnh sửa và chọn ảnh trước khi lưu)</small></label>
+    <div class="capture-custom"><label for="cameraCustomCount">Số ảnh muốn chụp (1–10)</label><input id="cameraCustomCount" type="number" min="1" max="10" step="1" inputmode="numeric" value="5"><button id="cameraApplyCount" class="btn btn-outline" type="button">Chọn số ảnh</button></div>
     <div class="control-label layout-title">02 — Bố cục các ô ảnh</div>
     <div class="layout-options" id="layoutOptions"></div>
     <label class="manual-toggle"><input id="manualPosition" type="checkbox"><span>Tự kéo thả vị trí ô ảnh trên bản xem trước</span></label>
@@ -60,10 +63,55 @@
   </section>
   <div class="download-panel"><div><b>Một file ảnh chứa đúng bố cục bạn chọn</b><small id="downloadDescription">Chụp đủ 3 ảnh để tải JPEG, không upload lên server.</small></div><button type="button" id="download" class="btn btn-download" disabled>⇩ Download ảnh <span>→</span></button></div>
 </section></div><footer>BloomBooth Studio ✿ Made for your little moments</footer>
+
+<section id="editorWorkspace" class="editor-workspace" hidden aria-label="Trình chỉnh sửa ảnh BloomBooth">
+ <div class="editor-workspace-head">
+  <div><span class="overline">PHOTO EDITOR</span><h2>Chỉnh sửa & ghép ảnh theo ý bạn</h2>
+  <p>Chọn số ô, nhập ảnh từ Photos, chạm ảnh để đưa vào ô hoặc kéo từng ô trực tiếp trên preview.</p></div>
+  <button id="editorClose" class="btn btn-outline" type="button">Đóng chỉnh sửa</button>
+ </div>
+ <div class="editor-workspace-grid">
+  <div class="editor-workspace-preview">
+   <canvas id="editCanvas" width="420" height="900" aria-label="Bản xem trước bố cục khung và ảnh"></canvas>
+   <div class="editor-workspace-tools">
+    <label>Kiểu lấp ảnh <select id="editorFit"><option value="contain">Giữ toàn ảnh (không cắt)</option><option value="cover">Lấp đầy khung (cắt viền)</option></select></label>
+    <label>Kích thước ô đang chọn <input id="editorSizeSlider" type="range" min="50" max="160" value="100" step="5"></label>
+    <button type="button" id="editorResetLayout" class="btn btn-outline">Đặt lại vị trí ô</button>
+   </div>
+   <button type="button" class="btn btn-download" id="editorSave">Lưu ảnh đã chỉnh vào Photos</button>
+   <p id="editorStatus" role="status">Chụp ảnh hoặc nhập ảnh từ thư viện để bắt đầu.</p>
+  </div>
+  <div class="editor-workspace-controls">
+   <label class="editor-field">Số ảnh trong bố cục (1–10)
+     <input id="editorCount" type="number" min="1" max="10" value="3" step="1" inputmode="numeric">
+   </label>
+   <div class="editor-import-actions">
+    <button type="button" id="editorFromCamera" class="btn btn-outline">Lấy ảnh vừa chụp</button>
+    <label class="btn btn-coral editor-file-button">Thêm ảnh từ Photos <input id="editorUpload" type="file" accept="image/*" multiple hidden></label>
+   </div>
+   <div class="editor-slot-heading"><b>Ô ảnh trong khung</b><span id="editorSelectionState"></span></div>
+   <div id="editorChosen" class="editor-chosen"></div>
+   <p class="help-text">Chạm ô muốn thay → chạm ảnh trong kho bên dưới. Bạn có thể chọn ảnh bất kỳ, đổi thứ tự, hoặc thêm ảnh mới.</p>
+   <div id="editorSources" class="editor-sources"></div>
+   <div class="editor-slot-heading"><b>Chọn bố cục độc lập</b><span>32 kiểu</span></div>
+   <div id="editorTemplates" class="editor-templates" aria-label="Thư viện bố cục ảnh độc lập"></div>
+   <div class="editor-slot-heading"><b>Thêm trang trí</b><span>41 chủ đề</span></div>
+   <select id="editorTheme" aria-label="Chọn khung chủ đề" class="editor-full-select"></select>
+   <div class="editor-slot-heading"><b>Filter màu</b></div>
+   <select id="editorFilter" aria-label="Chọn filter ảnh" class="editor-full-select"></select>
+   <div class="editor-slot-heading"><b>Khung PNG của bạn</b></div>
+   <label class="btn btn-outline editor-file-button">Nhập khung PNG trong suốt <input id="editorOverlay" type="file" accept="image/png,image/webp" hidden></label>
+   <button type="button" id="editorClearOverlay" class="btn btn-outline">Bỏ khung PNG đã nhập</button>
+   <p class="help-text">Hãy chỉ nhập các mẫu bạn sở hữu hoặc được phép sử dụng. Vị trí ô ảnh có thể kéo và điều chỉnh để khớp với mẫu.</p>
+  </div>
+ </div>
+</section>
 </main>
 <script src="/mobile/filter-engine.js?v=8" defer></script>
 <script src="/mobile/frame-art.js?v=10" defer></script>
-<script src="/mobile/studio-engine.js?v=10" defer></script>
+<script src="/mobile/studio-engine.js?v=12" defer></script>
+<script src="/mobile/layout-catalog.js?v=12" defer></script>
 <script src="/mobile/selection-engine.js?v=11" defer></script>
-<script src="/mobile/lite.js?v=11" defer></script>
+<script src="/mobile/lite.js?v=12" defer></script>
+<script src="/mobile/editor-v4.js?v=12" defer></script>
 </body></html>
