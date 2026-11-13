@@ -32,7 +32,7 @@ try {
   foreach ($file in $changes) {
     # Camera/editor assets and the separately built iOS project never change
     # the Windows Docker image. Avoid rebuilding when these are the only edits.
-    if ($file -notmatch '^(mobile/|tests/|\.github/|deploy/|ios-app/|README|DEPLOY-WINDOWS-IPHONE\.md|PHOTO-EDITOR-V4\.md|IOS-SIDELOADLY-README\.md|IPHONE-PWA-README\.md|\.gitignore$|scripts/(build-iphone-pwa\.cjs|build-ios-app\.cjs|configure-ios-plist\.py|generate-pwa-icons\.py)$)') {
+    if ($file -notmatch '^(mobile/|tests/|\.github/|deploy/|ios-app/|README|DEPLOY-WINDOWS-IPHONE\.md|PHOTO-EDITOR-V4\.md|IOS-SIDELOADLY-README\.md|IPHONE-PWA-README\.md|PINTEREST-14-CURATED-FRAMES\.md|\.gitignore$|scripts/(build-iphone-pwa\.cjs|build-ios-app\.cjs|configure-ios-plist\.py|generate-pwa-icons\.py|generate-curated-frames\.py|generate-frame-gallery\.py)$)') {
       $frontendOnly = $false
       break
     }
