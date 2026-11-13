@@ -30,7 +30,9 @@ try {
   }
   $frontendOnly = ($changes.Count -gt 0)
   foreach ($file in $changes) {
-    if ($file -notmatch '^(mobile/|tests/|\.github/|deploy/|README|DEPLOY-WINDOWS-IPHONE\.md)') {
+    # Camera/editor assets and the separately built iOS project never change
+    # the Windows Docker image. Avoid rebuilding when these are the only edits.
+    if ($file -notmatch '^(mobile/|tests/|\.github/|deploy/|ios-app/|README|DEPLOY-WINDOWS-IPHONE\.md|PHOTO-EDITOR-V4\.md|IOS-SIDELOADLY-README\.md|IPHONE-PWA-README\.md|\.gitignore$|scripts/(build-iphone-pwa\.cjs|build-ios-app\.cjs|configure-ios-plist\.py|generate-pwa-icons\.py)$)') {
       $frontendOnly = $false
       break
     }
