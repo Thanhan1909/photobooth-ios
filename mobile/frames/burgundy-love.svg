@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="1080" viewBox="0 0 600 1080">
+<defs><mask id="photo-holes" maskUnits="userSpaceOnUse"><rect width="600" height="1080" fill="white"/><g fill="black"><rect x="78" y="140" width="444" height="234" rx="19.9" /><rect x="78" y="427" width="444" height="234" rx="19.9" /><rect x="78" y="713" width="444" height="234" rx="19.9" /></g></mask></defs>
+<g mask="url(#photo-holes)">
+<rect width="600" height="1080" fill="#73182e"/>
+<rect x="19" y="18" width="562" height="1044" fill="none" stroke="#f5c7bf" stroke-width="7"/><g transform="translate(77 75) scale(0.55)"><path d="M0 0 C-55 -40 -88 -25 -55 12L0 7C47 -28 87 -29 54 13Z" fill="#eed6ca" stroke="#b76d90" stroke-width="4"/><path d="M-4 8L-40 86L0 54L44 84L8 6" fill="#eed6ca" stroke="#b76d90" stroke-width="4"/><circle cx="0" cy="4" r="14" fill="#ffe8ef"/></g><text x="568" y="1031.3999999999999" font-size="70" text-anchor="end" fill="#ffe7d9">♥</text>
+<text x="300.0" y="94" font-size="30" font-family="Arial,sans-serif" font-weight="800" text-anchor="middle" fill="#fff6e8" letter-spacing="3">BURGUNDY LOVE NOTES</text>
+<text x="300.0" y="1036" font-size="22" font-family="Georgia,serif" font-style="italic" text-anchor="middle" fill="#fff6e8">BloomBooth · little memories</text>
+</g>
+<g fill="none" stroke="#e0a9a4" stroke-width="8"><rect x="78" y="140" width="444" height="234" rx="19.9" /><rect x="78" y="427" width="444" height="234" rx="19.9" /><rect x="78" y="713" width="444" height="234" rx="19.9" /></g>
+</svg>

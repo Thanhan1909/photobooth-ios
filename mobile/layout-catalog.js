@@ -39,9 +39,10 @@ window.BloomLayoutCatalog=(()=>{
     ['zine-asymmetric','Zine bất đối xứng','magazine',.67,'#ebecd3','#738b70',1],
     ['overlap-art','Ảnh nghệ thuật','wall',.72,'#e6dcf4','#9a85c7',6]
   ];
-  const templates=specs.map(([id,label,pattern,ratio,bg,accent,variation])=>({
+  const templates=[...specs.map(([id,label,pattern,ratio,bg,accent,variation])=>({
     id,label,pattern,ratio,bg,accent,variation
-  }));
+  })),...(window.BloomCuratedFrames||[])];
+  const artworkCache=new Map();
   const clamp=(n,low,high)=>Math.min(high,Math.max(low,n));
   function safe(rect){
     const w=clamp(rect.w,.09,.88),h=clamp(rect.h,.065,.76);
@@ -51,6 +52,10 @@ window.BloomLayoutCatalog=(()=>{
     if(!Number.isInteger(count)||count<1||count>10)throw Error('Invalid photo count');
     const t=typeof template==='string'?templates.find(x=>x.id===template):template;
     if(!t)throw Error('Unknown layout');
+    if(t.fixedSlots){
+      if(count===t.fixedCount)return t.fixedSlots.map(r=>({...r}));
+      return slots('classic-strip',count);
+    }
     const n=count,mode=t.pattern;
     let rects=[];
     if(n===1){rects=[{x:.11,y:.16,w:.78,h:.67}];}
@@ -175,12 +180,12 @@ window.BloomLayoutCatalog=(()=>{
   }
   function slotShape(ctx,x,y,w,h,template){
     const id=template.id;
-    const motif=id.includes('heart')||id.includes('couple')?'heart':
+    const motif=template.frameShape|| (id.includes('heart')||id.includes('couple')?'heart':
       id.includes('y2k')||id.includes('bubble')||id.includes('passport')?'oval':
       id.includes('diary')||id.includes('graduation')||id.includes('holiday')?'arch':
       id.includes('film')||id.includes('ticket')?'ticket':
       id.includes('polaroid')||id.includes('postcard')?'paper':
-      id.includes('comic')||id.includes('zine')?'cut':'round';
+      id.includes('comic')||id.includes('zine')?'cut':'round');
     const radius=Math.min(w,h);
     ctx.beginPath();
     if(motif==='oval'){
@@ -219,6 +224,7 @@ window.BloomLayoutCatalog=(()=>{
     }
   }
   function drawBackground(ctx,w,h,t){
+    if(t.fixedSlots){ctx.fillStyle=t.bg;ctx.fillRect(0,0,w,h);return;}
     ctx.save();ctx.fillStyle=t.bg;ctx.fillRect(0,0,w,h);
     const a=t.accent,vari=t.variation;
     ctx.fillStyle=a;
@@ -246,5 +252,18 @@ window.BloomLayoutCatalog=(()=>{
     ornaments(ctx,w,h,t);
     ctx.restore();
   }
-  return Object.freeze({templates,slots,slotShape,drawBackground});
+  function drawArtwork(ctx,w,h,t){
+    if(!t.artwork)return false;
+    let img=artworkCache.get(t.id);
+    if(!img){
+      img=new Image();artworkCache.set(t.id,img);
+      img.onload=()=>window.dispatchEvent(new CustomEvent('bloom:frame-ready',{detail:{id:t.id}}));
+      img.onerror=()=>{console.warn('Missing frame artwork',t.id);};
+      const script=document.querySelector('script[src*="curated-frames.js"]');
+      img.src=new URL(t.artwork,script?.src||document.baseURI).href;
+    }
+    if(img.complete&&img.naturalWidth){ctx.drawImage(img,0,0,w,h);return true;}
+    return false;
+  }
+  return Object.freeze({templates,slots,slotShape,drawBackground,drawArtwork});
 })();

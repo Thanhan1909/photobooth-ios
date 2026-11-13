@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="1080" viewBox="0 0 600 1080">
+<defs><mask id="photo-holes" maskUnits="userSpaceOnUse"><rect width="600" height="1080" fill="white"/><g fill="black"><path d="M95.00999999999999 259H504.99L522 276.01V430.99L504.99 448H95.00999999999999L78 430.99V276.01Z" /><path d="M95.00999999999999 513H504.99L522 530.01V684.99L504.99 702H95.00999999999999L78 684.99V530.01Z" /><path d="M95.00999999999999 767H504.99L522 784.01V938.99L504.99 956H95.00999999999999L78 938.99V784.01Z" /></g></mask></defs>
+<g mask="url(#photo-holes)">
+<rect width="600" height="1080" fill="#ecd5b9"/>
+<rect x="23" y="25" width="554" height="1030" fill="none" stroke="#915a48" stroke-width="5" stroke-dasharray="13 8"/><path d="M60 40l23 34-27 28-22-30Z" fill="#b97e62" opacity=".75"/><path d="M135 40l23 34-27 28-22-30Z" fill="#b97e62" opacity=".75"/><path d="M210 40l23 34-27 28-22-30Z" fill="#b97e62" opacity=".75"/><path d="M285 40l23 34-27 28-22-30Z" fill="#b97e62" opacity=".75"/><path d="M360 40l23 34-27 28-22-30Z" fill="#b97e62" opacity=".75"/><path d="M435 40l23 34-27 28-22-30Z" fill="#b97e62" opacity=".75"/><path d="M510 40l23 34-27 28-22-30Z" fill="#b97e62" opacity=".75"/><text x="300" y="1004.4000000000001" text-anchor="middle" font-size="34" fill="#794e49">☆ CINEMA CLUB ☆</text>
+<text x="300.0" y="186" font-size="30" font-family="Arial,sans-serif" font-weight="800" text-anchor="middle" fill="#704b46" letter-spacing="3">CINEMA CANDY SCRAP</text>
+<text x="300.0" y="1036" font-size="22" font-family="Georgia,serif" font-style="italic" text-anchor="middle" fill="#704b46">BloomBooth · little memories</text>
+</g>
+<g fill="none" stroke="#c58067" stroke-width="8"><path d="M95.00999999999999 259H504.99L522 276.01V430.99L504.99 448H95.00999999999999L78 430.99V276.01Z" /><path d="M95.00999999999999 513H504.99L522 530.01V684.99L504.99 702H95.00999999999999L78 684.99V530.01Z" /><path d="M95.00999999999999 767H504.99L522 784.01V938.99L504.99 956H95.00999999999999L78 938.99V784.01Z" /></g>
+</svg>

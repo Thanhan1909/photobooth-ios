@@ -12,14 +12,20 @@ const source=path.join(root,'mobile');
 const output=path.join(root,'dist','iphone');
 const files=[
   'filter-engine.js','frame-art.js','studio-engine.js',
-  'selection-engine.js','layout-catalog.js','template-library.js','editor-v4.js','lite.js','lite.css'
+  'selection-engine.js','curated-frames.js','layout-catalog.js','template-library.js','editor-v4.js','lite.js','lite.css'
 ];
 const assets=['./','./index.html','./manifest.webmanifest',
   ...files.map(f=>'./'+f),
+  ...fs.readdirSync(path.join(source,'frames')).filter(f=>f.endsWith('.svg')).map(f=>'./frames/'+f),
+  './frame-gallery.html',
   './icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png'];
 fs.rmSync(output,{recursive:true,force:true});
 fs.mkdirSync(path.join(output,'icons'),{recursive:true});
 for(const name of files)fs.copyFileSync(path.join(source,name),path.join(output,name));
+fs.cpSync(path.join(source,'frames'),path.join(output,'frames'),{recursive:true});
+if(fs.existsSync(path.join(source,'frame-gallery.html'))){
+  fs.copyFileSync(path.join(source,'frame-gallery.html'),path.join(output,'frame-gallery.html'));
+}
 let html=fs.readFileSync(path.join(source,'index.html'),'utf8');
 html=html.replace(/(["'])\/mobile\/([^"']+)/g,(_m,q,p)=>q+'./'+p);
 html=html.replace(/<title>(.*?)<\/title>/,'<title>BloomBooth — iPhone Photo Studio</title>');

@@ -98,6 +98,7 @@
     state.activeSlot=(target+1)%state.count;
     refreshSources();
     paint();
+    updateCameraControls();
     showStatus('Đã chụp ô '+(target+1)+'. Tiếp theo: ô '+(state.activeSlot+1)+'.');
   }
 
@@ -138,7 +139,7 @@
     }else{
       catalog.drawBackground(c,w,h,state.template);
     }
-    if(!state.backgroundImage&&state.frame.id!=='plain'){
+    if(!state.backgroundImage&&!state.template.artwork&&state.frame.id!=='plain'){
       // Decorative artwork never draws on top of the subject photos.
       window.BloomFrameArt.draw(c,w,h,state.frame);
     }
@@ -197,7 +198,9 @@
       }
       c.restore();
     });
-    // A licensed/user-provided transparent overlay can be drawn above the photos.
+    // Original frame artwork has transparent holes matching fixed photo slots.
+    // The very same compositor is used for preview and full-resolution export.
+    if(!state.backgroundImage)catalog.drawArtwork(c,w,h,state.template);
     if(state.overlay?.width)c.drawImage(state.overlay,0,0,w,h);
   }
   function paint(){
@@ -252,6 +255,12 @@
     const t=catalog.templates.find(x=>x.id===id);
     if(!t)return;
     state.template=t;
+    if(t.fixedCount){
+      state.count=t.fixedCount;
+      state.selected=state.selected.slice(0,state.count);
+      get('editorCount').value=String(state.count);
+      refreshSources();
+    }
     state.rects=catalog.slots(t,state.count);
     state.activeSlot=0;drawTemplateGallerySelection();paint();updateCameraControls();
     showStatus('Đã chọn '+t.label+'. Bố cục thay đổi ngay, giữ nguyên ảnh đã chọn.');
@@ -269,10 +278,13 @@
       b.className='editor-template-item';b.dataset.template=t.id;
       const c=document.createElement('canvas');c.width=110;c.height=Math.round(110/t.ratio);
       catalog.drawBackground(c.getContext('2d'),c.width,c.height,t);
-      const rects=catalog.slots(t,state.count);
+      const rects=catalog.slots(t,t.fixedCount||state.count);
       const cc=c.getContext('2d');cc.fillStyle='#ffffffcc';
-      rects.forEach(r=>{cc.fillRect(r.x*c.width,r.y*c.height,r.w*c.width,r.h*c.height);
-        cc.strokeStyle=t.accent;cc.strokeRect(r.x*c.width,r.y*c.height,r.w*c.width,r.h*c.height);});
+      rects.forEach(r=>{
+        catalog.slotShape(cc,r.x*c.width,r.y*c.height,r.w*c.width,r.h*c.height,t);
+        cc.fill();cc.strokeStyle=t.accent;cc.stroke();
+      });
+      catalog.drawArtwork(cc,c.width,c.height,t);
       const text=document.createElement('span');text.textContent=t.label;
       b.append(c,text);b.addEventListener('click',()=>chooseTemplate(t.id));
       layouts.append(b);
@@ -282,6 +294,12 @@
   function setCount(next){
     const n=Number(next);
     if(!Number.isInteger(n)||n<1||n>10)return;
+    // Curated artworks have exact cutouts; changing the slot count switches
+    // to an adaptable layout instead of painting photos under wrong holes.
+    if(state.template.fixedCount&&state.template.fixedCount!==n){
+      state.template=catalog.templates.find(t=>t.id==='classic-strip');
+      showStatus('Đã chuyển sang bố cục linh hoạt cho '+n+' ảnh.');
+    }
     state.count=n;state.selected=state.selected.slice(0,n);
     state.rects=catalog.slots(state.template,n);state.activeSlot=0;updateCameraControls();
     refreshSources();drawGallery();paint();
@@ -528,5 +546,8 @@
   // Makes any photo count accessible; capture itself is controlled by the camera screen.
   window.BloomEditor=Object.freeze({addSource,importFiles,setCount,save,chooseTemplate});
   refreshSources();drawGallery();paint();updateCameraControls();
+  window.addEventListener('bloom:frame-ready',()=>{
+    drawGallery();paint();
+  });
   void refreshPersonalTemplates();
 })();
