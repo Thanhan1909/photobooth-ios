@@ -88,7 +88,7 @@ jobs:
           cd ..
           unzip -tq BloomBooth-iOS-unsigned.ipa
       - name: Upload IPA artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: BloomBooth-iOS-Sideloadly-unsigned-IPA
           path: BloomBooth-iOS-unsigned.ipa
